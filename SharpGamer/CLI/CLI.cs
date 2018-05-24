@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-
+using SharpGamer.SimulationEngine;
 namespace SharpGamer.CLI
 {
     /*

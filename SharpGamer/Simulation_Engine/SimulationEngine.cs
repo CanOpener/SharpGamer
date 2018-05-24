@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace SharpGamer.Simulation_Engine
+namespace SharpGamer.SimulationEngine
 {
     /* 
      * This is where the graphical simulation engine
