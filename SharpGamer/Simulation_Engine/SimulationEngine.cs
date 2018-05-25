@@ -20,7 +20,12 @@ namespace SharpGamer.SimulationEngine
         {
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new Forms.Form1());
+            
+            // Couldnt find this property in the Design tab...
+            Form f = new Forms.Form1();
+            f.KeyPreview = true;
+
+            Application.Run(f);
         }
     }
 }
