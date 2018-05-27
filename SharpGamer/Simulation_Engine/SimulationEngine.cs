@@ -1,6 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
 
 namespace SharpGamer.SimulationEngine
 {
@@ -12,9 +15,17 @@ namespace SharpGamer.SimulationEngine
     */
     class SimulationEngine
     {
-        static void Main(string[] args)
+        [STAThread]
+        static void Main()
         {
-            Console.WriteLine("Simulation Engine Started");
+            Application.EnableVisualStyles();
+            Application.SetCompatibleTextRenderingDefault(false);
+            
+            // Couldnt find this property in the Design tab...
+            Form f = new Forms.Form1();
+            f.KeyPreview = true;
+
+            Application.Run(f);
         }
     }
 }
