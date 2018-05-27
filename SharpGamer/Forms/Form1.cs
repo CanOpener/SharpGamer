@@ -1,10 +1,12 @@
-﻿using System;
+﻿using SharpGamer.Simulation_Engine.Games;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 
@@ -12,13 +14,13 @@ namespace SharpGamer.Forms
 {
     public partial class Form1 : Form
     {
-        private int currentSimFrame = 0;
-        private Boolean running = false;
-        private int frameLimiter = -1;
+        private Thread workerThread = null;
+        private Snake game;
 
         public Form1()
         {
             InitializeComponent();
+            game = new Snake(500, 500, ref pictureBox1);
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -28,7 +30,9 @@ namespace SharpGamer.Forms
 
         private void start_Click(object sender, EventArgs e)
         {
-
+            game = new Snake(500, 500, ref pictureBox1);
+            workerThread = new System.Threading.Thread(new System.Threading.ThreadStart(game.runUserGame));
+            workerThread.Start();
         }
 
         private void go_n_click(object sender, EventArgs e)
@@ -43,9 +47,8 @@ namespace SharpGamer.Forms
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            if (e.Control)
-            {
-            }
+            e.SuppressKeyPress = true;
+            game.addKeyPress(e);
         }
     }
 }
