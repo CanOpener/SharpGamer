@@ -12,7 +12,7 @@ using System.Threading;
 namespace SharpGamer.Games.Snake
 {
     public enum Cell { Empty, Food, Snake, Wall };
-    public enum Direction { Up, Down, Left, Right };
+    public enum Direction { Up, Right, Down, Left };
     public struct Point { public int x, y; public Point(int a, int b) { x = a; y = b; } };
 
     class Snake : UserPlayableGame, NetworkPlayableGame
@@ -35,18 +35,34 @@ namespace SharpGamer.Games.Snake
         private Graphics drawingArea;
         private Random rand;
 
-        public Snake(int pixelsw, int pixelsh, ref PictureBox screen, int gridSideSize = 20, Random r = null)
+        public Snake(int pixelsw, int pixelsh, ref PictureBox screen, int gridSideLength = 20, Random r = null)
         {
-            if (r == null) this.rand = new Random();
-            this.boardSideLength = gridSideSize;
+            if (r == null) r = new Random();
+            this.rand = r;
+            this.boardSideLength = gridSideLength;
             this.pixelsw = pixelsw;
             this.pixelsh = pixelsh;
             this.screen = screen;
         }
 
+        // intended for no graphics use.
+        public Snake(int gridSideLength = 20, Random r = null)
+        {
+            if (r == null) r = new Random();
+            this.rand = r;
+            this.boardSideLength = gridSideLength;
+            this.pixelsw = 500;
+            this.pixelsh = 500;
+            this.screen = null;
+        }
+
         public void init()
         {
-            drawingArea = screen.CreateGraphics();
+            if (screen != null)
+            {
+                drawingArea = screen.CreateGraphics();
+            }
+            
             keyPressQueue = new ConcurrentQueue<Direction>();
             cells = new List<List<Cell>>(boardSideLength);
             snake = new List<Point>(1);
@@ -193,7 +209,7 @@ namespace SharpGamer.Games.Snake
                 // Wait until next Frame
                 long currentTime = DateTime.UtcNow.Millisecond;
                 long frameDuration = currentTime - frameStartTime;
-                if (fps != -1 && frameDuration < milisPerFrame)
+                if (frameDuration < milisPerFrame)
                 {
                     long sleepDuration = milisPerFrame - frameDuration;
                     System.Threading.Thread.Sleep((int)sleepDuration);
@@ -203,7 +219,7 @@ namespace SharpGamer.Games.Snake
             return;//score;;
         }
 
-        private void render()
+        public void render()
         {
             Pen blackPen = new Pen(Color.Black);
             Brush whiteBrush = new SolidBrush(Color.White);

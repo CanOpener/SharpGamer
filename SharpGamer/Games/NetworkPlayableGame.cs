@@ -13,5 +13,6 @@ namespace SharpGamer.Games
         GameState getGameState();
         bool registerMove(int moveEnum);
         bool finishTurn();
+        void render();
     }
 }

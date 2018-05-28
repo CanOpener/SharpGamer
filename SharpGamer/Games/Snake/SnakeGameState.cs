@@ -8,12 +8,13 @@ namespace SharpGamer.Games.Snake
 {
     struct SnakeGameState : GameState
     {
-        bool gameOver;
-        List<List<Cell>> grid;
-        Direction snakeDirection;
-        Point snakeHead;
-        int score;
-        int currentTurn;
+        public bool gameOver;
+        public List<List<Cell>> grid;
+        public Direction snakeDirection;
+        public Point snakeHead;
+        public int score;
+        public int currentTurn;
+        public int gridSideLength;
 
         public SnakeGameState(ref List<List<Cell>> grid, Direction sd, Point sh, int s, int ct, bool go)
         {
@@ -23,6 +24,7 @@ namespace SharpGamer.Games.Snake
             this.score = s;
             this.currentTurn = ct;
             this.gameOver = go;
+            this.gridSideLength = grid.Count();
         }
     }
 }
