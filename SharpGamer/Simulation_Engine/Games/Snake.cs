@@ -68,7 +68,7 @@ namespace SharpGamer.Simulation_Engine.Games
 
         public void runUserGame()
         {
-            int framesPerSecond = 12;
+            int framesPerSecond = 10;
             fps = framesPerSecond;
             long milisPerFrame = 1000 / framesPerSecond;
             while (currentFrame <= maxFrames)
