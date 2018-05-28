@@ -59,8 +59,8 @@
     <Compile Include="Forms\Form1.Designer.cs">
       <DependentUpon>Form1.cs</DependentUpon>
     </Compile>
+    <Compile Include="Neural_Network_Engine\SharpNeuralNetwork.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Neural_Network_Engine\SharpNetworkEngine.cs" />
     <Compile Include="APIs\SharpPlayerAPI.cs" />
     <Compile Include="Players\SharpPlayerDefault.cs" />
     <Compile Include="Simulation_Engine\Games\Snake.cs" />
