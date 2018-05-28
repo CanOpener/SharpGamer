@@ -9,48 +9,52 @@ using System.Windows.Forms;
 using System.Drawing;
 using System.Threading;
 
-namespace SharpGamer.Simulation_Engine.Games
+namespace SharpGamer.Games.Snake
 {
-    class Snake
-    {
-        private enum Cell { Empty, Food, Snake, Wall, Neck };
-        private enum Direction { Up, Down, Left, Right };
-        private struct Point { public int x, y;};
+    public enum Cell { Empty, Food, Snake, Wall };
+    public enum Direction { Up, Down, Left, Right };
+    public struct Point { public int x, y; public Point(int a, int b) { x = a; y = b; } };
 
+    class Snake : UserPlayableGame, NetworkPlayableGame
+    {
+        private const int maxTurns = 10000;
+        private const int fps = 10;
         private int boardSideLength;
         private int pixelsw;
         private int pixelsh;
+        private int currentTurn = 1;
+        private int numFood = 0;
+        private int score = 0;
+        private bool gameOver = false;
+
         private List<List<Cell>> cells;
         private List<Point> snake;
         private Direction snakeDirection;
         private ConcurrentQueue<Direction> keyPressQueue;
         private PictureBox screen;
         private Graphics drawingArea;
+        private Random rand;
 
-        private const int maxFrames = 10000;
-        private int currentFrame = 1;
-        private int fps;
-        private int numFood = 0;
-        private int score = 0;
-
-
-        public Snake(int pixelsw, int pixelsh, ref PictureBox screen)
+        public Snake(int pixelsw, int pixelsh, ref PictureBox screen, int gridSideSize = 20, Random r = null)
         {
+            if (r == null) this.rand = new Random();
+            this.boardSideLength = gridSideSize;
             this.pixelsw = pixelsw;
             this.pixelsh = pixelsh;
             this.screen = screen;
+        }
+
+        public void init()
+        {
             drawingArea = screen.CreateGraphics();
             keyPressQueue = new ConcurrentQueue<Direction>();
-            //boardSideLength = (int)MathNet.Numerics.Euclid.GreatestCommonDivisor(pixelsw, pixelsh);
-            boardSideLength = 25;
-            System.Console.WriteLine(boardSideLength);
             cells = new List<List<Cell>>(boardSideLength);
             snake = new List<Point>(1);
 
-            for (int i=0; i<boardSideLength; i++)
+            for (int i = 0; i < boardSideLength; i++)
             {
                 List<Cell> row = new List<Cell>(boardSideLength);
-                for (int j=0; j<boardSideLength; j++)
+                for (int j = 0; j < boardSideLength; j++)
                 {
                     row.Add(Cell.Empty);
                 }
@@ -66,30 +70,93 @@ namespace SharpGamer.Simulation_Engine.Games
             generateFood();
         }
 
-        public void runUserGame()
+        public GameState getGameState()
         {
-            int framesPerSecond = 10;
-            fps = framesPerSecond;
-            long milisPerFrame = 1000 / framesPerSecond;
-            while (currentFrame <= maxFrames)
+            return new SnakeGameState(
+                    ref this.cells,
+                    this.snakeDirection,
+                    (this.snake.Count > 0 ? this.snake[0] : new Point(0, 0)),
+                    this.score,
+                    this.currentTurn,
+                    this.gameOver
+                );
+        }
+
+        public bool registerMove(int moveEnum)
+        {
+            Direction d = (Direction)moveEnum;
+
+            if (d != opposite(snakeDirection))
+            {
+                snakeDirection = d;
+                return true;
+            }
+            return false;
+        }
+
+        public void addKeyPress(KeyEventArgs e)
+        {
+            if (keyPressQueue == null) return;
+
+            switch (e.KeyCode)
+            {
+                case Keys.Up:
+                    keyPressQueue.Enqueue(Direction.Up);
+                    break;
+                case Keys.Down:
+                    keyPressQueue.Enqueue(Direction.Down);
+                    break;
+                case Keys.Left:
+                    keyPressQueue.Enqueue(Direction.Left);
+                    break;
+                case Keys.Right:
+                    keyPressQueue.Enqueue(Direction.Right);
+                    break;
+                default:
+                    return;
+            }
+        }
+        
+        public int getTurn()
+        {
+            return currentTurn;
+        }
+
+        public bool finishTurn()
+        {
+            Cell nextCell = nextCellInDirection(this.snakeDirection);
+            if (nextCell == Cell.Snake || nextCell == Cell.Wall)
+            {
+                // game over
+                gameOver = true;
+            }
+            else if (nextCell == Cell.Food)
+            {
+                moveSnakeInDirection(this.snakeDirection, true);
+            }
+            else
+            {
+                moveSnakeInDirection(this.snakeDirection, false);
+            }
+
+            currentTurn++;
+            return gameOver;
+        }
+
+        public void startGame()
+        {
+            long milisPerFrame = 1000 / fps;
+            while (currentTurn <= maxTurns)
             {
                 long frameStartTime = DateTime.UtcNow.Millisecond;
 
                 // Get user input queue
-                Direction nextDirection = snakeDirection;
-                Cell nextCell = nextCellInDirection(snakeDirection);
                 if (!keyPressQueue.IsEmpty)
                 {
+                    Direction nextDirection;
                     if (keyPressQueue.TryDequeue(out nextDirection))
                     {
-                        // If next cell is anything but the neck (including out of bounds)
-                        // update snakeDirection. Otherwise ignore.
-                        Cell tempcell = nextCellInDirection(nextDirection);
-                        if (tempcell != Cell.Neck)
-                        {
-                            snakeDirection = nextDirection;
-                            nextCell = tempcell;
-                        }
+                        registerMove((int)nextDirection); // sets new snakeDirection if not invalid move
                     }
                     else
                     {
@@ -99,6 +166,7 @@ namespace SharpGamer.Simulation_Engine.Games
                 keyPressQueue = new ConcurrentQueue<Direction>();
 
                 // see if events in next move (eat food, hit wall, hit snake etc..)
+                Cell nextCell = nextCellInDirection(this.snakeDirection);
                 if (nextCell == Cell.Wall || nextCell == Cell.Snake)
                 {
                     MessageBox.Show("Game Over\nYour score was " + score);
@@ -130,30 +198,9 @@ namespace SharpGamer.Simulation_Engine.Games
                     long sleepDuration = milisPerFrame - frameDuration;
                     System.Threading.Thread.Sleep((int)sleepDuration);
                 }
-                currentFrame++;
+                currentTurn++;
             }
             return;//score;;
-        }
-
-        public void addKeyPress(KeyEventArgs e)
-        {
-            switch(e.KeyCode)
-            {
-                case Keys.Up:
-                    keyPressQueue.Enqueue(Direction.Up);
-                    break;
-                case Keys.Down:
-                    keyPressQueue.Enqueue(Direction.Down);
-                    break;
-                case Keys.Left:
-                    keyPressQueue.Enqueue(Direction.Left);
-                    break;
-                case Keys.Right:
-                    keyPressQueue.Enqueue(Direction.Right);
-                    break;
-                default:
-                    return;
-            }
         }
 
         private void render()
@@ -168,15 +215,6 @@ namespace SharpGamer.Simulation_Engine.Games
             int squareHeightPixels = pixelsh / boardSideLength;
             Rectangle wipeRect = new Rectangle(new System.Drawing.Point(0, 0),
                         new System.Drawing.Size(pixelsw, pixelsh));
-
-            // clear screen first
-            /*
-             * disabling this for now
-            screen.Invoke((MethodInvoker)delegate
-            {
-                drawingArea.FillRectangle(grayBrush, wipeRect);
-            });
-            */
             List<Rectangle> pixels = new List<Rectangle>(boardSideLength*boardSideLength);
             List<Brush> colors = new List<Brush>(boardSideLength * boardSideLength);
 
@@ -235,11 +273,6 @@ namespace SharpGamer.Simulation_Engine.Games
             {
                 return Cell.Wall;
             }
-            // Cell in snake body just before head. Must ignore this
-            else if (snake.Count > 1 && currentPoint.x == snake[1].x && currentPoint.y == snake[1].y)
-            {
-                return Cell.Neck;
-            }
             // The rest can be read from the board
             else
             {
@@ -259,6 +292,7 @@ namespace SharpGamer.Simulation_Engine.Games
 
                 nextPoint = temp;
             }
+            cells[nextPoint.x][nextPoint.y] = Cell.Empty;
 
             if (grow)
             {
@@ -267,26 +301,37 @@ namespace SharpGamer.Simulation_Engine.Games
                 snake.Add(nextPoint);
                 generateFood();
             }
-            else
-            {
-                cells[nextPoint.x][nextPoint.y] = Cell.Empty;
-            }
         }
 
         private void generateFood()
         {
-            Random rand = new Random();
-            Point p;
-            Cell c;
+            Point randPoint;
+            Cell cellAtPoint;
             do
             {
-                p.x = rand.Next(0, boardSideLength);
-                p.y = rand.Next(0, boardSideLength);
-                c = cells[p.x][p.y];
-            } while (c != Cell.Empty);
-            cells[p.x][p.y] = Cell.Food;
+                randPoint.x = this.rand.Next(0, boardSideLength);
+                randPoint.y = this.rand.Next(0, boardSideLength);
+                cellAtPoint = cells[randPoint.x][randPoint.y];
+            } while (cellAtPoint != Cell.Empty);
+            cells[randPoint.x][randPoint.y] = Cell.Food;
             numFood++;
         }
 
+        public Direction opposite(Direction d)
+        {
+            switch (d)
+            {
+                case Direction.Up:
+                    return Direction.Down;
+                case Direction.Down:
+                    return Direction.Up;
+                case Direction.Left:
+                    return Direction.Right;
+                case Direction.Right:
+                    return Direction.Left;
+                default:
+                    return Direction.Down;
+            }
+        }
     }
 }
