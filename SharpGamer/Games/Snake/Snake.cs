@@ -17,7 +17,7 @@ namespace SharpGamer.Games.Snake
 
     class Snake : UserPlayableGame, NetworkPlayableGame
     {
-        private const int maxTurns = 10000;
+        private const int maxTurns = 500;
         private const int fps = 10;
         private int boardSideLength;
         private int pixelsw;
@@ -141,7 +141,7 @@ namespace SharpGamer.Games.Snake
         public bool finishTurn()
         {
             Cell nextCell = nextCellInDirection(this.snakeDirection);
-            if (nextCell == Cell.Snake || nextCell == Cell.Wall)
+            if (nextCell == Cell.Snake || nextCell == Cell.Wall || currentTurn+1 > maxTurns)
             {
                 // game over
                 gameOver = true;

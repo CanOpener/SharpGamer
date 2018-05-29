@@ -15,19 +15,42 @@ namespace SharpGamer.Neural_Network_Engine
      * 2. Ability to feed forward input.
      * 3. Weights and Biases
     */
-    class SharpNeuralNetwork
+    public class SharpNeuralNetwork
     {
-        private int numHiddenLayers = 0;
-        private int inputLayerSize;
-        private List<Matrix<float>> allWeights;
-        private List<Matrix<float>> allBiases;
-        private Random rand;
+        public int numHiddenLayers = 0;
+        public int inputLayerSize;
+        public List<Matrix<float>> allWeights;
+        public List<Matrix<float>> allBiases;
+        public Random rand;
 
         public SharpNeuralNetwork(int inputSize)
         {
             inputLayerSize = inputSize;
             allWeights = new List<Matrix<float>>();
             allBiases = new List<Matrix<float>>();
+            rand = new Random();
+        }
+
+        public SharpNeuralNetwork(SharpNeuralNetwork nn)
+        {
+            inputLayerSize = nn.inputLayerSize;
+
+            allWeights = new List<Matrix<float>>(nn.allWeights.Count);
+            for (int i=0; i<nn.allWeights.Count; i++)
+            {
+                Matrix<float> r = nn.allWeights[i];
+                Matrix<float> weightCopy = CreateMatrix.Dense<float>(r.RowCount, r.ColumnCount, r.ToColumnMajorArray());
+                allWeights.Add(weightCopy);
+            }
+
+            allBiases = new List<Matrix<float>>(nn.allBiases.Count);
+            for (int i = 0; i < nn.allBiases.Count; i++)
+            {
+                Matrix<float> r = nn.allBiases[i];
+                Matrix<float> biasCopy = CreateMatrix.Dense<float>(r.RowCount, r.ColumnCount, r.ToColumnMajorArray());
+                allBiases.Add(biasCopy);
+            }
+
             rand = new Random();
         }
 
@@ -39,8 +62,9 @@ namespace SharpGamer.Neural_Network_Engine
                 previousLayerSize = allBiases[allBiases.Count - 1].RowCount;
             }
             
-            Matrix<float> weights = Matrix<float>.Build.Dense(numNeurons, previousLayerSize, generateNewWeight);
-            Matrix<float> biases = Matrix<float>.Build.Dense(numNeurons, 1, generateNewBias);
+            // HERE IS THE PROBLEM
+            Matrix<float> weights = Matrix<float>.Build.Dense(numNeurons, previousLayerSize, generateNewWeightSet(numNeurons*previousLayerSize));
+            Matrix<float> biases = Matrix<float>.Build.Dense(numNeurons, 1, generateNewWeightSet(numNeurons));
 
             allWeights.Add(weights);
             allBiases.Add(biases);
@@ -77,12 +101,21 @@ namespace SharpGamer.Neural_Network_Engine
         /*
          * Used for generating new weight and bias values between 0 and 1
         */
-        private float generateNewWeight(int x, int y)
+        public float[] generateNewWeightSet(int size)
         {
-            return (float)((rand.NextDouble()*8)-4);
+            List<float> l = new List<float>(size);
+            for (int i=0; i<size; i++)
+            {
+                l.Add(generateNewWeight());
+            }
+            return l.ToArray();
+        }
+        public float generateNewWeight()
+        {
+            return (float)((rand.NextDouble()*20)-10);
         }
 
-        private float generateNewBias(int x, int y)
+        public float generateNewBias()
         {
             return (float)(rand.NextDouble());
         }

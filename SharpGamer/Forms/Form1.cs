@@ -24,7 +24,7 @@ namespace SharpGamer.Forms
         public Form1()
         {
             InitializeComponent();
-            player = new SharpSnakePlayer(100000);
+            player = new SharpSnakePlayer(500);
             player.init();
             game = new Snake(500, 500, ref pictureBox1);
         }
@@ -36,10 +36,9 @@ namespace SharpGamer.Forms
 
         private void start_Click(object sender, EventArgs e)
         {
-            
-            ParameterizedThreadStart start = new ParameterizedThreadStart(player.runNextGeneration);
+            ParameterizedThreadStart start = new ParameterizedThreadStart(player.runNGenerations);
             workerThread = new Thread(start);
-            workerThread.Start(new Players.SharpSnakePlayer.runNextGenerationParams(progressBar1, richTextBox1));
+            workerThread.Start(new Players.SharpSnakePlayer.runNextGenerationParams(progressBar1, richTextBox1, 0.05));
         }
 
         private void go_n_click(object sender, EventArgs e)

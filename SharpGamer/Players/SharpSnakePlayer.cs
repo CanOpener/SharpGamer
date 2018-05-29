@@ -47,7 +47,8 @@ namespace SharpGamer.Players
         private int populationMax;
         private int generation = 1;
         private List<SharpNeuralNetwork> population;
-        
+        private SharpNeuralNetwork bestPreviousGen = null;
+
         public SharpSnakePlayer(int pop)
         {
             this.populationMax = pop;
@@ -67,10 +68,21 @@ namespace SharpGamer.Players
         {
             public ProgressBar progressBar;
             public RichTextBox textBox;
-            public runNextGenerationParams(ProgressBar pb, RichTextBox tb)
+            public double mutationRate;
+            public runNextGenerationParams(ProgressBar pb, RichTextBox tb, double mr)
             {
                 this.progressBar = pb;
                 this.textBox = tb;
+                this.mutationRate = mr;
+            }
+        }
+
+        public void runNGenerations(Object obj)
+        {
+            int numGens = 100;
+            for (int i=0; i<numGens; i++)
+            {
+                runNextGeneration(obj);
             }
         }
 
@@ -90,6 +102,7 @@ namespace SharpGamer.Players
             
             int turnNumber = 1;
             int numFinished = 0;
+            int maxScore = 0;
 
             // Fix this shit TODO
             while (numFinished < population.Count)
@@ -121,6 +134,10 @@ namespace SharpGamer.Players
                     if (gameOver)
                     {
                         numFinished++;
+                        if (sim.s > maxScore)
+                        {
+                            maxScore = sim.s;
+                        }
                         sim.s = ((SnakeGameState)(sim.g.getGameState())).score;
                     }
                 }
@@ -130,7 +147,7 @@ namespace SharpGamer.Players
                     // update progress bar
                 }
 
-                String strToWrite = $"{numFinished} Done, {population.Count-numFinished} left.\n";
+                String strToWrite = $"{generation}, {population.Count-numFinished} left.\n";
                 strToWrite += $"Turn: {turnNumber}\n";
 
                 p.textBox.BeginInvoke((MethodInvoker)delegate
@@ -140,24 +157,46 @@ namespace SharpGamer.Players
                 turnNumber++;
             }
 
+            // sort in order of score
+            // sims.Sort(new SimulationComparer());
+
+            List<SharpNeuralNetwork> pool = new List<SharpNeuralNetwork>();
+            for (int i=0; i<sims.Count; i++)
+            {
+                int numEntries = (int)(((float)sims[i].s / (float)maxScore) * 100f);
+                for (int j=0; i<numEntries; j++)
+                {
+                    pool.Add(sims[i].n);
+                }
+            }
+
+            List<SharpNeuralNetwork> newPop = new List<SharpNeuralNetwork>(populationMax);
+            for (int i=0; i<populationMax; i++)
+            {
+                if (pool.Count == 0)
+                {
+                    newPop.Add(GeneticLearning.produceMutation(sims[new Random().Next(0, sims.Count)].n, p.mutationRate));
+                }
+                else
+                {
+                    newPop.Add(GeneticLearning.produceMutation(pool[new Random().Next(0, pool.Count)], p.mutationRate));
+                }
+                
+            }
+
+            bestPreviousGen = sims[0].n;
+
             String str = $"Done.\n";
+            str += $"Generation: {generation}\n";
             str += $"Turn: {turnNumber}\n";
+            str += $"Best NN score: {maxScore}\n";
 
             p.textBox.BeginInvoke((MethodInvoker)delegate
             {
                 p.textBox.Text = str;
             });
 
-            // sort in order of score
-            sims.Sort(new SimulationComparer());
-            List<SharpNeuralNetwork> newPop = new List<SharpNeuralNetwork>(sims.Count);
-            Console.WriteLine($"s:{sims[0].s} , e:{sims[sims.Count - 1].s}\n");
-            
-            for (int i=0; i<sims.Count; i++)
-            {
-                newPop.Add(sims[i].n);
-            }
-
+            generation++;
             population = newPop;
         }
 
@@ -178,7 +217,7 @@ namespace SharpGamer.Players
         {
             runBestOnScreenParams p = (runBestOnScreenParams)obj;
 
-            SharpNeuralNetwork candidate = population[0];
+            SharpNeuralNetwork candidate = bestPreviousGen;
             Snake newGame = new Snake(p.pixelsw, p.pixelsh,ref p.screen, 25);
             newGame.init();
 
@@ -196,6 +235,13 @@ namespace SharpGamer.Players
 
                 // get move from network
                 Matrix<float> output = candidate.feedForwardInput(inputs);
+                for (int i=0; i<4; i++)
+                {
+                    Console.Write($"{output.At(i, 0)},");
+                    
+                }
+                Console.WriteLine("");
+                
 
                 // interprete network output to game move
                 newGame.registerMove(networkOutputToMove(output));
@@ -242,7 +288,7 @@ namespace SharpGamer.Players
                 int numValuesFound = 0;
                 int numSpaces = 0;
                 bool[] valuesFound = { false, false, false, false };
-                float[] values = { 1f, 1f, 1f, 1f };
+                float[] values = { 0f, 0f, 0f, 0f };
                 while (numValuesFound < 4) // one distance value for each type of cell in this direction
                 {
                     head.x += xDelta;
@@ -325,7 +371,7 @@ namespace SharpGamer.Players
         public SharpNeuralNetwork createNetworkV1()
         {
             SharpNeuralNetwork nn = new SharpNeuralNetwork(32);
-            nn.addLayer(16);
+            nn.addLayer(8);
             nn.addLayer(4);
             return nn;
         }
