@@ -134,7 +134,7 @@
             // 
             // mutationRatePicker
             // 
-            this.mutationRatePicker.DecimalPlaces = 3;
+            this.mutationRatePicker.DecimalPlaces = 2;
             this.mutationRatePicker.Increment = new decimal(new int[] {
             1,
             0,
@@ -150,10 +150,10 @@
             this.mutationRatePicker.Size = new System.Drawing.Size(86, 20);
             this.mutationRatePicker.TabIndex = 10;
             this.mutationRatePicker.Value = new decimal(new int[] {
-            1,
+            35,
             0,
             0,
-            65536});
+            131072});
             // 
             // label1
             // 
@@ -175,7 +175,7 @@
             // 
             // crossOverRatePicker
             // 
-            this.crossOverRatePicker.DecimalPlaces = 3;
+            this.crossOverRatePicker.DecimalPlaces = 2;
             this.crossOverRatePicker.Increment = new decimal(new int[] {
             1,
             0,
@@ -190,6 +190,11 @@
             this.crossOverRatePicker.Name = "crossOverRatePicker";
             this.crossOverRatePicker.Size = new System.Drawing.Size(86, 20);
             this.crossOverRatePicker.TabIndex = 13;
+            this.crossOverRatePicker.Value = new decimal(new int[] {
+            1,
+            0,
+            0,
+            65536});
             // 
             // label3
             // 
@@ -202,7 +207,7 @@
             // 
             // maxStepSizePicker
             // 
-            this.maxStepSizePicker.DecimalPlaces = 3;
+            this.maxStepSizePicker.DecimalPlaces = 2;
             this.maxStepSizePicker.Increment = new decimal(new int[] {
             1,
             0,
@@ -223,7 +228,7 @@
             this.maxStepSizePicker.Size = new System.Drawing.Size(86, 20);
             this.maxStepSizePicker.TabIndex = 15;
             this.maxStepSizePicker.Value = new decimal(new int[] {
-            1,
+            5,
             0,
             0,
             65536});

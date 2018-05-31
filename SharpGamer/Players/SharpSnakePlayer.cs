@@ -17,10 +17,12 @@ namespace SharpGamer.Players
         private int populationMax;
         private int generation = 1;
         private List<SharpNeuralNetwork> population;
-        private SharpNeuralNetwork bestPreviousGen = null;
+        private Random rand;
 
-        public SharpSnakePlayer(int pop)
+        public SharpSnakePlayer(int pop, Random r = null)
         {
+            if (r == null) rand = new Random();
+            else rand = r;
             this.populationMax = pop;
         }
 
@@ -120,7 +122,7 @@ namespace SharpGamer.Players
                     {
                         numFinished++;
                         //network.score = gameInstance.score;
-                        network.score = (gameInstance.getTurn()/10) + (gameInstance.score*20);
+                        network.score = gameInstance.score;
                     }
                 }
 
@@ -161,7 +163,7 @@ namespace SharpGamer.Players
             }
 
             List<DNA> newPopulation = GeneticLearning.generateNewPopulationFromPcSelection(pop,
-                p.crossoverRate, p.mutationRate, p.maxStepSize, p.pc);
+                p.crossoverRate, p.mutationRate, p.maxStepSize, p.pc, rand);
 
             for (int i = 0; i < newPopulation.Count; i++)
             {
@@ -258,14 +260,14 @@ namespace SharpGamer.Players
 
                 int numValuesFound = 0;
                 int numSpaces = 0;
-                bool[] valuesFound = { false, false, false, false };
-                float[] values = { 0f, 0f, 0f, 0f };
-                while (numValuesFound < 4) // one distance value for each type of cell in this direction
+                bool[] valuesFound = { false, false, false };
+                float[] values = { 0f, 0f, 0f };
+                while (numValuesFound < values.Count()) // one distance value for each type of cell in this direction
                 {
                     head.x += xDelta;
                     head.y += yDelta;
                     Cell cellHere;
-
+                    
                     // Wall
                     if (head.x < 0 || head.x >= g.gridSideLength ||
                         head.y < 0 || head.y >= g.gridSideLength)
@@ -275,12 +277,18 @@ namespace SharpGamer.Players
                     else
                     {
                         cellHere = g.grid[head.x][head.y];
+                        if (cellHere == Cell.Empty)
+                        {
+                            continue;
+                        }
                     }
 
-                    if (valuesFound[(int)cellHere] == false) // This type of cell has not been found in this direction yet
+                    int indexHere = (int)cellHere - 1;
+
+                    if (valuesFound[indexHere] == false) // This type of cell has not been found in this direction yet
                     {
-                        values[(int)cellHere] = 1f - ((float)numSpaces / (float)(g.gridSideLength - 1));
-                        valuesFound[(int)cellHere] = true;
+                        values[indexHere] = 1f - ((float)numSpaces / (float)(g.gridSideLength - 1));
+                        valuesFound[indexHere] = true;
                         if (cellHere == Cell.Wall)
                         {
                             // after wall is found nothing else can be found in that direction
@@ -293,7 +301,7 @@ namespace SharpGamer.Players
                 }
                 inputs.AddRange(values);
             }
-            return CreateMatrix.Dense<float>(32, 1, inputs.ToArray());
+            return CreateMatrix.Dense<float>(inputs.Count(), 1, inputs.ToArray());
         }
 
         private void deltasForDirection(int direction, out int xDelta, out int yDelta)
@@ -341,8 +349,8 @@ namespace SharpGamer.Players
 
         public SharpNeuralNetwork createNetworkV1()
         {
-            SharpNeuralNetwork nn = new SharpNeuralNetwork(32);
-            nn.addLayer(16);
+            SharpNeuralNetwork nn = new SharpNeuralNetwork(24);
+            nn.addLayer(12);
             nn.addLayer(4);
             return nn;
         }

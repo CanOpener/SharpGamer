@@ -109,7 +109,12 @@ namespace SharpGamer.Neural_Network_Engine
                 if (rand.NextDouble() <= crossoverRate)
                 {
                     // do crossover
-                    DNA parentB = selectUsingPc(population, pc, rand);
+                    DNA parentB;
+                    do
+                    {
+                        parentB = selectUsingPc(population, pc, rand);
+                    } while (parentA.getid().Equals(parentB.getid()));
+                    
                     child = parentA.applyCrossOver(parentB);
                     //Console.WriteLine("Crossover");
                 }

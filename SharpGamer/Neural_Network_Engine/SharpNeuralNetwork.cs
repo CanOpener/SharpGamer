@@ -17,6 +17,7 @@ namespace SharpGamer.Neural_Network_Engine
     */
     public class SharpNeuralNetwork : DNA
     {
+        public string id { get; }
         public int numHiddenLayers = 0;
         public int inputLayerSize;
         public List<Matrix<float>> allWeights;
@@ -26,39 +27,47 @@ namespace SharpGamer.Neural_Network_Engine
         public int score { get; set; } = 0;
         public int getScore() { return score; }
 
-        public SharpNeuralNetwork(int inputSize)
+        public SharpNeuralNetwork(int inputSize, Random r = null)
         {
+            if (r == null) rand = new Random();
+            else rand = r;
+            id = System.Guid.NewGuid().ToString();
             inputLayerSize = inputSize;
             allWeights = new List<Matrix<float>>();
             allBiases = new List<Matrix<float>>();
-            rand = new Random();
         }
 
-        public SharpNeuralNetwork(SharpNeuralNetwork nn)
+        public SharpNeuralNetwork(SharpNeuralNetwork nn, Random r = null)
         {
+            if (r == null) rand = new Random();
+            else rand = r;
+            id = System.Guid.NewGuid().ToString();
             inputLayerSize = nn.inputLayerSize;
 
             allWeights = new List<Matrix<float>>(nn.allWeights.Count);
             for (int i=0; i<nn.allWeights.Count; i++)
             {
-                Matrix<float> r = nn.allWeights[i];
-                Matrix<float> weightCopy = CreateMatrix.Dense<float>(r.RowCount, r.ColumnCount);
-                r.CopyTo(weightCopy);
+                Matrix<float> mat = nn.allWeights[i];
+                Matrix<float> weightCopy = CreateMatrix.Dense<float>(mat.RowCount, mat.ColumnCount);
+                mat.CopyTo(weightCopy);
                 allWeights.Add(weightCopy);
             }
             
             allBiases = new List<Matrix<float>>(nn.allBiases.Count);
             for (int i = 0; i < nn.allBiases.Count; i++)
             {
-                Matrix<float> r = nn.allBiases[i];
-                Matrix<float> biasCopy = CreateMatrix.Dense<float>(r.RowCount, r.ColumnCount);
-                r.CopyTo(biasCopy);
+                Matrix<float> mat = nn.allBiases[i];
+                Matrix<float> biasCopy = CreateMatrix.Dense<float>(mat.RowCount, mat.ColumnCount);
+                mat.CopyTo(biasCopy);
                 allBiases.Add(biasCopy);
             }
 
             numHiddenLayers = nn.numHiddenLayers;
+        }
 
-            rand = new Random();
+        public string getid()
+        {
+            return id;
         }
 
         public DNA clone()
@@ -125,10 +134,83 @@ namespace SharpGamer.Neural_Network_Engine
         public DNA applyCrossOver(DNA d)
         {
             // TODO do this properly
-            SharpNeuralNetwork n = new SharpNeuralNetwork(this);
+            SharpNeuralNetwork parentB = (SharpNeuralNetwork)d;
+            SharpNeuralNetwork child = new SharpNeuralNetwork(this);
 
+            // get crossover cut off point
+            int genomeSize = child.getGenomeSize();
+            MathNet.Numerics.Distributions.Normal normalDist = new MathNet.Numerics.Distributions.Normal(0.5, 0.1, rand);
+            double cutOffPoint = normalDist.Sample(); 
+            if (cutOffPoint < 0.1) cutOffPoint = 0.1;
+            else if (cutOffPoint > 0.9) cutOffPoint = 0.9;
+            int cutOffIndex = (int)((double)genomeSize * cutOffPoint);
 
-            return d;
+            Console.WriteLine($"Crossover at {cutOffPoint}");
+
+            // copying from that index to finish
+            for (int i = cutOffIndex; i<genomeSize; i++)
+            {
+                child.setValueAtIndex(i, parentB.getValueAtIndex(i));
+            }
+
+            return child;
+        }
+
+        public float getValueAtIndex(int index)
+        {
+            int currentIndex = 0;
+            for (int i = 0; i < allWeights.Count(); i++)
+            {
+                int matrixCount = allWeights[i].RowCount * allWeights[i].ColumnCount;
+                if (matrixCount + currentIndex > index)
+                {
+                    int row = (index - currentIndex) % allWeights[i].RowCount;
+                    int column = (index - currentIndex) / allWeights[i].RowCount;
+                    return allWeights[i].At(row, column);
+                }
+                currentIndex += matrixCount;
+
+                int biasMatrixCount = allBiases[i].RowCount * allBiases[i].ColumnCount;
+                if (biasMatrixCount + currentIndex > index)
+                {
+                    int row = (index - currentIndex) % allBiases[i].RowCount;
+                    int column = (index - currentIndex) / allBiases[i].RowCount;
+                    return allBiases[i].At(row, column);
+                }
+                currentIndex += biasMatrixCount;
+            }
+
+            Console.WriteLine("Something went wrong in getValueAtIndex");
+            return 0f;
+        }
+
+        public void setValueAtIndex(int index, float value)
+        {
+            int currentIndex = 0;
+            for (int i = 0; i < allWeights.Count(); i++)
+            {
+                int matrixCount = allWeights[i].RowCount * allWeights[i].ColumnCount;
+                if (matrixCount + currentIndex > index)
+                {
+                    int row = (index - currentIndex) % allWeights[i].RowCount;
+                    int column = (index - currentIndex) / allWeights[i].RowCount;
+                    allWeights[i].At(row, column, value);
+                    return;
+                }
+                currentIndex += matrixCount;
+
+                int biasMatrixCount = allBiases[i].RowCount * allBiases[i].ColumnCount;
+                if (biasMatrixCount + currentIndex > index)
+                {
+                    int row = (index - currentIndex) % allBiases[i].RowCount;
+                    int column = (index - currentIndex) / allBiases[i].RowCount;
+                    allBiases[i].At(row, column, value);
+                    return;
+                }
+                currentIndex += biasMatrixCount;
+            }
+
+            Console.WriteLine("Something went wrong in setValueAtIndex");
         }
 
         public void mutateAt(int index, double step, bool positive)
