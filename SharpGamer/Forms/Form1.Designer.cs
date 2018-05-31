@@ -253,23 +253,23 @@
             // 
             // pcPicker
             // 
-            this.pcPicker.DecimalPlaces = 3;
+            this.pcPicker.DecimalPlaces = 2;
             this.pcPicker.Increment = new decimal(new int[] {
             1,
             0,
             0,
-            65536});
+            131072});
             this.pcPicker.Location = new System.Drawing.Point(68, 12);
             this.pcPicker.Maximum = new decimal(new int[] {
-            1,
+            99,
             0,
             0,
-            0});
+            131072});
             this.pcPicker.Minimum = new decimal(new int[] {
             1,
             0,
             0,
-            327680});
+            131072});
             this.pcPicker.Name = "pcPicker";
             this.pcPicker.Size = new System.Drawing.Size(86, 20);
             this.pcPicker.TabIndex = 19;

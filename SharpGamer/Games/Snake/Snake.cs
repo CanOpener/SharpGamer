@@ -30,7 +30,7 @@ namespace SharpGamer.Games.Snake
 
         private List<List<Cell>> cells;
         private List<Point> snake;
-        private Direction snakeDirection;
+        public Direction snakeDirection { get; set; }
         private ConcurrentQueue<Direction> keyPressQueue;
         private PictureBox screen;
         private Graphics drawingArea;
@@ -222,11 +222,9 @@ namespace SharpGamer.Games.Snake
 
         public void render()
         {
-            Pen blackPen = new Pen(Color.Black);
-            Brush whiteBrush = new SolidBrush(Color.White);
-            Brush greenBrush = new SolidBrush(Color.Green);
-            Brush blueBrush = new SolidBrush(Color.Blue);
-            Brush blackBrush = new SolidBrush(Color.Black);
+            Brush backgroundBrush = new SolidBrush(Color.LightSteelBlue);
+            Brush foodBrush = new SolidBrush(Color.Red);
+            Brush snakeBrush = new SolidBrush(Color.Black);
 
             int squareWidthPixels = pixelsw / boardSideLength;
             int squareHeightPixels = pixelsh / boardSideLength;
@@ -239,10 +237,10 @@ namespace SharpGamer.Games.Snake
             {
                 for (int j = 0; j < boardSideLength; j++)
                 {
-                    Brush targetBrush = whiteBrush;
+                    Brush targetBrush = backgroundBrush;
 
-                    if (cells[i][j] == Cell.Food) { targetBrush = greenBrush; }
-                    else if (cells[i][j] == Cell.Snake) { targetBrush = blueBrush; }
+                    if (cells[i][j] == Cell.Food) { targetBrush = foodBrush; }
+                    else if (cells[i][j] == Cell.Snake) { targetBrush = snakeBrush; }
 
                     colors.Add(targetBrush);
                     pixels.Add(new Rectangle(new System.Drawing.Point(j * squareWidthPixels, i * squareHeightPixels),

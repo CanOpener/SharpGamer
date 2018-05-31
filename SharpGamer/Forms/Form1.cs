@@ -24,7 +24,7 @@ namespace SharpGamer.Forms
         public Form1()
         {
             InitializeComponent();
-            player = new SharpSnakePlayer(25000);
+            player = new SharpSnakePlayer(10000);
             player.init();
             game = new Snake(500, 500, ref pictureBox1);
         }

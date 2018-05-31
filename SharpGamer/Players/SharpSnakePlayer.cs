@@ -112,7 +112,7 @@ namespace SharpGamer.Players
                     Matrix<float> output = network.feedForwardInput(inputs);
 
                     // interprete network output to game move
-                    gameInstance.registerMove(networkOutputToMove(output));
+                    gameInstance.registerMove(networkOutputToMove(output, gameInstance.snakeDirection));
 
                     // go to next turn in game
                     bool gameOver = gameInstance.finishTurn();
@@ -208,7 +208,7 @@ namespace SharpGamer.Players
 
                 // get move from network
                 Matrix<float> output = candidate.feedForwardInput(inputs);
-                for (int i=0; i<4; i++)
+                for (int i=0; i<3; i++)
                 {
                     Console.Write($"{output.At(i, 0)},");
                     
@@ -217,7 +217,7 @@ namespace SharpGamer.Players
                 
 
                 // interprete network output to game move
-                newGame.registerMove(networkOutputToMove(output));
+                newGame.registerMove(networkOutputToMove(output, state.snakeDirection));
 
                 // render
                 newGame.render();
@@ -239,10 +239,21 @@ namespace SharpGamer.Players
 
         }
 
-        public int networkOutputToMove(Matrix<float> output)
+        public int networkOutputToMove(Matrix<float> output, Direction facingDirection)
         {
             Vector<float> ou = output.Column(0);
-            return ou.MaximumIndex();
+
+            switch(ou.MaximumIndex())
+            {
+                case 0: // choosing to go straight
+                    return (int)facingDirection;
+                case 1: // choosing to swing a right
+                    return ((int)facingDirection + 1) % 4;
+                case 2: // making a hard left
+                    return ((int)facingDirection + 3) % 4;
+            }
+
+            return (int)facingDirection;
         }
 
         public Matrix<float> gameStateToInputs(GameState gs)
@@ -256,7 +267,10 @@ namespace SharpGamer.Players
                 Point head = g.snakeHead;
                 int xDelta = 0;
                 int yDelta = 0;
-                deltasForDirection(i, out xDelta, out yDelta);
+
+                // Trying out new perspective input method
+                //deltasForDirection(i, out xDelta, out yDelta);
+                deltasForDirectionFacing(i, g.snakeDirection, out xDelta, out yDelta);
 
                 int numValuesFound = 0;
                 int numSpaces = 0;
@@ -347,11 +361,34 @@ namespace SharpGamer.Players
             }
         }
 
+        private void deltasForDirectionFacing(int direction, Direction facing, out int xDelta, out int yDelta)
+        {
+            switch(facing)
+            {
+                case Direction.Up:
+                    deltasForDirection(direction, out xDelta, out yDelta);
+                    break;
+                case Direction.Right:
+                    deltasForDirection(((direction + 2) % 8), out xDelta, out yDelta);
+                    break;
+                case Direction.Down:
+                    deltasForDirection(((direction + 4) % 8), out xDelta, out yDelta);
+                    break;
+                case Direction.Left:
+                    deltasForDirection(((direction + 6) % 8), out xDelta, out yDelta);
+                    break;
+                default:
+                    xDelta = 0;
+                    yDelta = 0;
+                    return;
+            }
+        }
+
         public SharpNeuralNetwork createNetworkV1()
         {
             SharpNeuralNetwork nn = new SharpNeuralNetwork(24);
             nn.addLayer(12);
-            nn.addLayer(4);
+            nn.addLayer(3);
             return nn;
         }
     }
