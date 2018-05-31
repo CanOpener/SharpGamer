@@ -23,8 +23,9 @@ namespace SharpGamer.Games.Snake
         private int pixelsw;
         private int pixelsh;
         private int currentTurn = 1;
+        private const int maxFood = 1;
         private int numFood = 0;
-        private int score = 0;
+        public int score { get; set; } = 0;
         private bool gameOver = false;
 
         private List<List<Cell>> cells;

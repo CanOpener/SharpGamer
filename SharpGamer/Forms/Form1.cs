@@ -24,7 +24,7 @@ namespace SharpGamer.Forms
         public Form1()
         {
             InitializeComponent();
-            player = new SharpSnakePlayer(500);
+            player = new SharpSnakePlayer(10000);
             player.init();
             game = new Snake(500, 500, ref pictureBox1);
         }
@@ -38,7 +38,8 @@ namespace SharpGamer.Forms
         {
             ParameterizedThreadStart start = new ParameterizedThreadStart(player.runNGenerations);
             workerThread = new Thread(start);
-            workerThread.Start(new Players.SharpSnakePlayer.runNextGenerationParams(progressBar1, richTextBox1, 0.05));
+            workerThread.Start(new Players.SharpSnakePlayer.runNextGenerationParams(progressBar1, richTextBox1,
+                (double)mutationRatePicker.Value, (double)crossOverRatePicker.Value, (double)maxStepSizePicker.Value, (int)numGenerationsPicker.Value, (int)pcPicker.Value));
         }
 
         private void go_n_click(object sender, EventArgs e)
@@ -50,7 +51,7 @@ namespace SharpGamer.Forms
         {
             ParameterizedThreadStart start = new ParameterizedThreadStart(player.runBestOnScreen);
             workerThread = new Thread(start);
-            workerThread.Start(new Players.SharpSnakePlayer.runBestOnScreenParams(500, 500, 10, pictureBox1));
+            workerThread.Start(new Players.SharpSnakePlayer.runBestOnScreenParams(500, 500, 10, (int)networkPicker.Value, pictureBox1));
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)

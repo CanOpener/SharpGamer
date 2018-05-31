@@ -61,6 +61,7 @@
     </Compile>
     <Compile Include="Games\GameState.cs" />
     <Compile Include="Games\Snake\SnakeGameState.cs" />
+    <Compile Include="Neural_Network_Engine\DNA.cs" />
     <Compile Include="Neural_Network_Engine\GeneticLearning.cs" />
     <Compile Include="Neural_Network_Engine\SharpNeuralNetwork.cs" />
     <Compile Include="Players\SharpPlayer.cs" />
