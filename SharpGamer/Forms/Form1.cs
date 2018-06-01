@@ -24,7 +24,7 @@ namespace SharpGamer.Forms
         public Form1()
         {
             InitializeComponent();
-            player = new SharpSnakePlayer(10000);
+            player = new SharpSnakePlayer(100000);
             player.init();
             game = new Snake(500, 500, ref pictureBox1);
         }
@@ -38,8 +38,8 @@ namespace SharpGamer.Forms
         {
             ParameterizedThreadStart start = new ParameterizedThreadStart(player.runNGenerations);
             workerThread = new Thread(start);
-            workerThread.Start(new Players.SharpSnakePlayer.runNextGenerationParams(progressBar1, richTextBox1,
-                (double)mutationRatePicker.Value, (double)crossOverRatePicker.Value, (double)maxStepSizePicker.Value, (int)numGenerationsPicker.Value, (double)pcPicker.Value));
+            workerThread.Start(new Players.SharpSnakePlayer.runNextGenerationParams(progressBar1, richTextBox1, (double)mutationRatePicker.Value,
+                (double)crossOverRatePicker.Value, (double)maxStepSizePicker.Value, (int)numGenerationsPicker.Value, (double)pcPicker.Value, diversityCB.Checked));
             richTextBox2.Text = $"Mutation Rate: {(double)mutationRatePicker.Value}\n" +
                 $"Crossover Rate: {(double)crossOverRatePicker.Value}\n" +
                 $"Max Step Size: {(double)maxStepSizePicker.Value}\n" +

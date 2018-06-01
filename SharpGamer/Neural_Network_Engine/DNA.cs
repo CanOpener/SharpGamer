@@ -9,6 +9,7 @@ namespace SharpGamer.Neural_Network_Engine
     public interface DNA
     {
         string getid();
+        float getDiversity();
         int getScore();
         int getGenomeSize();
         DNA applyCrossOver(DNA b);

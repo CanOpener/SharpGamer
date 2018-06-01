@@ -24,6 +24,8 @@ namespace SharpGamer.Neural_Network_Engine
         public List<Matrix<float>> allBiases;
         public Random rand;
 
+        public float diversity { get; set; } = 0;
+        public float getDiversity() { return diversity; }
         public int score { get; set; } = 0;
         public int getScore() { return score; }
 
@@ -145,8 +147,6 @@ namespace SharpGamer.Neural_Network_Engine
             else if (cutOffPoint > 0.9) cutOffPoint = 0.9;
             int cutOffIndex = (int)((double)genomeSize * cutOffPoint);
 
-            Console.WriteLine($"Crossover at {cutOffPoint}");
-
             // copying from that index to finish
             for (int i = cutOffIndex; i<genomeSize; i++)
             {
@@ -236,6 +236,32 @@ namespace SharpGamer.Neural_Network_Engine
                 currentIndex += biasMatrixCount;
             }
             Console.WriteLine($"Mutation Failed. Could not find index {index}");
+        }
+
+        public float[] getDnaAsArray()
+        {
+            List<float> dna = new List<float>(getGenomeSize());
+            
+            for (int i = 0; i < allWeights.Count(); i++)
+            {
+                for (int c=0; c<allWeights[i].ColumnCount; c++)
+                {
+                    for (int r=0; r<allWeights[i].RowCount; r++)
+                    {
+                        dna.Add(allWeights[i].At(r, c));
+                    }
+                }
+
+                for (int c = 0; c < allBiases[i].ColumnCount; c++)
+                {
+                    for (int r = 0; r < allBiases[i].RowCount; r++)
+                    {
+                        dna.Add(allBiases[i].At(r, c));
+                    }
+                }
+            }
+
+            return dna.ToArray();
         }
 
         private void mutateValue(bool weight, int startIndex, int matrixIndex, double step, bool positive)

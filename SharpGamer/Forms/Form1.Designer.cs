@@ -45,6 +45,7 @@
             this.label5 = new System.Windows.Forms.Label();
             this.pcPicker = new System.Windows.Forms.NumericUpDown();
             this.networkPicker = new System.Windows.Forms.NumericUpDown();
+            this.diversityCB = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.numGenerationsPicker)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.mutationRatePicker)).BeginInit();
@@ -291,11 +292,22 @@
             this.networkPicker.Size = new System.Drawing.Size(120, 20);
             this.networkPicker.TabIndex = 20;
             // 
+            // diversityCB
+            // 
+            this.diversityCB.AutoSize = true;
+            this.diversityCB.Location = new System.Drawing.Point(259, 12);
+            this.diversityCB.Name = "diversityCB";
+            this.diversityCB.Size = new System.Drawing.Size(113, 17);
+            this.diversityCB.TabIndex = 21;
+            this.diversityCB.Text = "Diversity Selection";
+            this.diversityCB.UseVisualStyleBackColor = true;
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1004, 576);
+            this.Controls.Add(this.diversityCB);
             this.Controls.Add(this.networkPicker);
             this.Controls.Add(this.pcPicker);
             this.Controls.Add(this.label5);
@@ -348,5 +360,6 @@
         private System.Windows.Forms.Label label5;
         private System.Windows.Forms.NumericUpDown pcPicker;
         private System.Windows.Forms.NumericUpDown networkPicker;
+        private System.Windows.Forms.CheckBox diversityCB;
     }
 }

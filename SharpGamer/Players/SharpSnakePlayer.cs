@@ -45,7 +45,8 @@ namespace SharpGamer.Players
             public double maxStepSize;
             public int numGenerations;
             public double pc;
-            public runNextGenerationParams(ProgressBar pb, RichTextBox tb, double mr, double cr, double mss, int numGens, double pc)
+            public bool diversity;
+            public runNextGenerationParams(ProgressBar pb, RichTextBox tb, double mr, double cr, double mss, int numGens, double pc, bool dc)
             {
                 this.progressBar = pb;
                 this.textBox = tb;
@@ -54,6 +55,7 @@ namespace SharpGamer.Players
                 this.maxStepSize = mss;
                 this.numGenerations = numGens;
                 this.pc = pc;
+                this.diversity = dc;
             }
         }
 
@@ -75,7 +77,14 @@ namespace SharpGamer.Players
             // mutate population based on previous results
             if (generation != 1)
             {
-                mutatePopulation(p);
+                if (p.diversity)
+                {
+                    mutatePopulationWithDiversityMeasure(p);
+                }
+                else
+                {
+                    mutatePopulation(p);
+                }
             }
 
             // instantiate a game for each entity
@@ -112,7 +121,8 @@ namespace SharpGamer.Players
                     Matrix<float> output = network.feedForwardInput(inputs);
 
                     // interprete network output to game move
-                    gameInstance.registerMove(networkOutputToMove(output, gameInstance.snakeDirection));
+                    //gameInstance.registerMove(networkOutputToMove(output));
+                    gameInstance.registerMove(networkOutputFacingToMove(output, state.snakeDirection));
 
                     // go to next turn in game
                     bool gameOver = gameInstance.finishTurn();
@@ -121,8 +131,9 @@ namespace SharpGamer.Players
                     if (gameOver)
                     {
                         numFinished++;
-                        //network.score = gameInstance.score;
-                        network.score = gameInstance.score;
+                        int total = 0;
+                        total += 0; //gameInstance.getTurn() / 10;
+                        network.score = total + (gameInstance.score*10);
                     }
                 }
 
@@ -161,8 +172,26 @@ namespace SharpGamer.Players
             {
                 pop.Add(n);
             }
-
+            
             List<DNA> newPopulation = GeneticLearning.generateNewPopulationFromPcSelection(pop,
+                p.crossoverRate, p.mutationRate, p.maxStepSize, p.pc, rand);
+
+            for (int i = 0; i < newPopulation.Count; i++)
+            {
+                population[i] = (SharpNeuralNetwork)newPopulation[i];
+            }
+        }
+
+        private void mutatePopulationWithDiversityMeasure(runNextGenerationParams p)
+        {
+            if (generation == 1) return;
+            List<DNA> pop = new List<DNA>(population.Count);
+            foreach (SharpNeuralNetwork n in population)
+            {
+                pop.Add(n);
+            }
+
+            List<DNA> newPopulation = GeneticLearning.generateNewPopulationFromDiversityAndFitness(pop,
                 p.crossoverRate, p.mutationRate, p.maxStepSize, p.pc, rand);
 
             for (int i = 0; i < newPopulation.Count; i++)
@@ -214,10 +243,11 @@ namespace SharpGamer.Players
                     
                 }
                 Console.WriteLine("");
-                
+
 
                 // interprete network output to game move
-                newGame.registerMove(networkOutputToMove(output, state.snakeDirection));
+                //newGame.registerMove(networkOutputToMove(output));
+                newGame.registerMove(networkOutputFacingToMove(output, state.snakeDirection));
 
                 // render
                 newGame.render();
@@ -239,7 +269,13 @@ namespace SharpGamer.Players
 
         }
 
-        public int networkOutputToMove(Matrix<float> output, Direction facingDirection)
+        public int networkOutputToMove(Matrix<float> output)
+        {
+            Vector<float> ou = output.Column(0);
+            return ou.MaximumIndex();
+        }
+
+        public int networkOutputFacingToMove(Matrix<float> output, Direction facingDirection)
         {
             Vector<float> ou = output.Column(0);
 

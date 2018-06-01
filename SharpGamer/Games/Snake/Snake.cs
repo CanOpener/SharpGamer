@@ -25,7 +25,7 @@ namespace SharpGamer.Games.Snake
         private int currentTurn = 1;
         private const int maxFood = 1;
         private int numFood = 0;
-        public int score { get; set; } = 0;
+        public int score { get; set; } = 1;
         private bool gameOver = false;
 
         private List<List<Cell>> cells;
