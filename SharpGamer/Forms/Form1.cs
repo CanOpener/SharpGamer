@@ -1,4 +1,6 @@
-﻿using SharpGamer.Simulation_Engine.Games;
+﻿using SharpGamer.Games;
+using SharpGamer.Games.Snake;
+using SharpGamer.Players;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -17,10 +19,13 @@ namespace SharpGamer.Forms
     {
         private Thread workerThread = null;
         private Snake game;
+        private SharpSnakePlayer player;
 
         public Form1()
         {
             InitializeComponent();
+            player = new SharpSnakePlayer(100000);
+            player.init();
             game = new Snake(500, 500, ref pictureBox1);
         }
 
@@ -31,9 +36,15 @@ namespace SharpGamer.Forms
 
         private void start_Click(object sender, EventArgs e)
         {
-            game = new Snake(500, 500, ref pictureBox1);
-            workerThread = new System.Threading.Thread(new System.Threading.ThreadStart(game.runUserGame));
-            workerThread.Start();
+            ParameterizedThreadStart start = new ParameterizedThreadStart(player.runNGenerations);
+            workerThread = new Thread(start);
+            workerThread.Start(new Players.SharpSnakePlayer.runNextGenerationParams(progressBar1, richTextBox1, (double)mutationRatePicker.Value,
+                (double)crossOverRatePicker.Value, (double)maxStepSizePicker.Value, (int)numGenerationsPicker.Value, (double)pcPicker.Value, diversityCB.Checked));
+            richTextBox2.Text = $"Mutation Rate: {(double)mutationRatePicker.Value}\n" +
+                $"Crossover Rate: {(double)crossOverRatePicker.Value}\n" +
+                $"Max Step Size: {(double)maxStepSizePicker.Value}\n" +
+                $"Num Generations: {(int)numGenerationsPicker.Value}\n" +
+                $"Pc: {(double)pcPicker.Value}";
         }
 
         private void go_n_click(object sender, EventArgs e)
@@ -43,7 +54,9 @@ namespace SharpGamer.Forms
 
         private void pause_click(object sender, EventArgs e)
         {
-
+            ParameterizedThreadStart start = new ParameterizedThreadStart(player.runBestOnScreen);
+            workerThread = new Thread(start);
+            workerThread.Start(new Players.SharpSnakePlayer.runBestOnScreenParams(500, 500, 10, (int)networkPicker.Value, pictureBox1));
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
