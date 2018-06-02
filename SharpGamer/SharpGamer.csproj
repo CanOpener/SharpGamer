@@ -61,14 +61,14 @@
     </Compile>
     <Compile Include="Games\GameState.cs" />
     <Compile Include="Games\Snake\SnakeGameState.cs" />
-    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\Activation.cs" />
-    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\ReluActivation.cs" />
-    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\SigmoidActivation.cs" />
-    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\SoftmaxActivation.cs" />
-    <Compile Include="NeuralNetwork_Engine\DNA.cs" />
-    <Compile Include="NeuralNetwork_Engine\GeneticLearning.cs" />
-    <Compile Include="NeuralNetwork_Engine\NeuralNetwork.cs" />
-    <Compile Include="NeuralNetwork_Engine\SharpNeuralNetwork.cs" />
+    <Compile Include="NeuralNetworkEngine\ActivationFunctions\Activation.cs" />
+    <Compile Include="NeuralNetworkEngine\ActivationFunctions\ReluActivation.cs" />
+    <Compile Include="NeuralNetworkEngine\ActivationFunctions\SigmoidActivation.cs" />
+    <Compile Include="NeuralNetworkEngine\ActivationFunctions\SoftmaxActivation.cs" />
+    <Compile Include="NeuralNetworkEngine\DNA.cs" />
+    <Compile Include="NeuralNetworkEngine\GeneticLearning.cs" />
+    <Compile Include="NeuralNetworkEngine\NeuralNetwork.cs" />
+    <Compile Include="NeuralNetworkEngine\SharpNeuralNetwork.cs" />
     <Compile Include="Players\SharpPlayer.cs" />
     <Compile Include="Players\SharpSnakePlayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -31,6 +31,28 @@ namespace SharpGamer.NeuralNetworkEngine.ActivationFunctions
             this.Type = ActivationType.Linear;
         }
 
+        /*
+         * Static Method which returns an instance of the
+         * Activation Function class corresponding to the 
+         * given ActivationType
+        */
+        public static Activation CreateActivation(ActivationType t)
+        {
+            switch (t)
+            {
+                case ActivationType.Linear:
+                    return new Activation();
+                case ActivationType.Sigmoid:
+                    return new SigmoidActivation();
+                case ActivationType.Relu:
+                    return new ReluActivation();
+                case ActivationType.Softmax:
+                    return new ReluActivation();
+                default:
+                    throw new ArgumentException("Un recognised Activation Type");
+            }
+        }
+
         // Use activation function on all values in given float array.
         public virtual float[] ActivateAll(float[] toActivate)
         {
