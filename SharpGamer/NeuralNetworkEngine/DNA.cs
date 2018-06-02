@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SharpGamer.Neural_Network_Engine
+namespace SharpGamer.NeuralNetworkEngine
 {
     public interface DNA
     {

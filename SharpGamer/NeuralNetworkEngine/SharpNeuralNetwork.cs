@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using MathNet.Numerics.LinearAlgebra;
 
-namespace SharpGamer.Neural_Network_Engine
+namespace SharpGamer.NeuralNetworkEngine
 {
     /*
      * This class must cover the following functionality:

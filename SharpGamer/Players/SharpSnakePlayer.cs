@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using SharpGamer.Neural_Network_Engine;
+using SharpGamer.NeuralNetworkEngine;
 using SharpGamer.Games;
 using SharpGamer.Games.Snake;
 using System.Windows.Forms;

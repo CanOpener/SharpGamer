@@ -32,7 +32,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup>
-    <StartupObject>SharpGamer.SimulationEngine.SimulationEngine</StartupObject>
+    <StartupObject>SharpGamer.CLI.CLI</StartupObject>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="MathNet.Numerics, Version=4.5.1.0, Culture=neutral, processorArchitecture=MSIL">
@@ -61,9 +61,14 @@
     </Compile>
     <Compile Include="Games\GameState.cs" />
     <Compile Include="Games\Snake\SnakeGameState.cs" />
-    <Compile Include="Neural_Network_Engine\DNA.cs" />
-    <Compile Include="Neural_Network_Engine\GeneticLearning.cs" />
-    <Compile Include="Neural_Network_Engine\SharpNeuralNetwork.cs" />
+    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\Activation.cs" />
+    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\ReluActivation.cs" />
+    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\SigmoidActivation.cs" />
+    <Compile Include="NeuralNetwork_Engine\ActivationFunctions\SoftmaxActivation.cs" />
+    <Compile Include="NeuralNetwork_Engine\DNA.cs" />
+    <Compile Include="NeuralNetwork_Engine\GeneticLearning.cs" />
+    <Compile Include="NeuralNetwork_Engine\NeuralNetwork.cs" />
+    <Compile Include="NeuralNetwork_Engine\SharpNeuralNetwork.cs" />
     <Compile Include="Players\SharpPlayer.cs" />
     <Compile Include="Players\SharpSnakePlayer.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

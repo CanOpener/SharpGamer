@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using MathNet.Numerics.LinearAlgebra;
 
-namespace SharpGamer.Neural_Network_Engine
+namespace SharpGamer.NeuralNetworkEngine
 {
     public static class GeneticLearning
     {
