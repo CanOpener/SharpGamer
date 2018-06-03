@@ -11,6 +11,21 @@ namespace SharpGamer.Players
 {
     abstract class Player
     {
+        // Current generation number
+        public abstract int GenerationNumber { get; }
+
+        // The maximum population for a generation
+        public abstract int PopulationMax { get; set; }
+
+        // The current generation population
+        public abstract List<NeuralNetwork> Population { get; }
+
+        // The random number generator used for all random numbers
+        public abstract Random Rand { get; set; }
+
+        // Instantiates a new population;
+        public abstract void Init();
+
         // Runs a specified number of generations. The reason it takes
         // an Object parameter is so that it can be started in another
         // thread... C#
@@ -39,6 +54,11 @@ namespace SharpGamer.Players
         // Uses parameters from the game object to create a set of
         // inputs for the neural network.
         public abstract Matrix<float> GameStateToNetworkInput(NetworkPlayableGame game);
+
+        // The classic fitness function for the specific game
+        // realistically this is going to be a really dynamic
+        // function..
+        public abstract int CalculateFitness(NetworkPlayableGame game);
 
         // Creates a neural network with the correct paramaters
         // for the game which the player is trying to play.

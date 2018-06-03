@@ -4,226 +4,229 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SharpGamer.NeuralNetworkEngine;
+using SharpGamer.SimulationEngine;
 using SharpGamer.Games;
-using SharpGamer.Games.Snake;
+using SharpGamer.Games.SnakeGame;
 using System.Windows.Forms;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace SharpGamer.Players
 {
 
-    class SharpSnakePlayer
+    class SnakePlayer : Player
     {
-        private int populationMax;
-        private int generation = 1;
-        private List<SharpNeuralNetwork> population;
-        private Random rand;
+        private int generationNumber = 1;
+        private List<NeuralNetwork> population;
 
-        public SharpSnakePlayer(int pop, Random r = null)
+        public override Random Rand { get; set; }
+        public override int PopulationMax { get; set; }
+        public override int GenerationNumber { get => generationNumber; }
+        public override List<NeuralNetwork> Population {
+            get {
+                //List<NeuralNetwork> pop = new List<NeuralNetwork>(population.Count);
+                //foreach (var n in population)
+                //{
+                //    pop.Add(new NeuralNetwork(n));
+                //}
+                //return pop;
+
+                // The above code introduced problems with my
+                // logic. Just going to use the reference pass by now
+                return population;
+            }
+        }
+        
+        /*
+         * Default constructor
+        */
+        public SnakePlayer(int populationMax, Random r)
         {
-            if (r == null) rand = new Random();
-            else rand = r;
-            this.populationMax = pop;
+            Rand = r;
+            PopulationMax = populationMax;
         }
 
+        /*
+         * Creates and Instantiates a new population based on the 
+         * PopulationMax property
+        */
         public void init()
         {
-            // populate
-            population = new List<SharpNeuralNetwork>(populationMax);
-            while(population.Count < populationMax)
+            List<NeuralNetwork> newPop = new List<NeuralNetwork>(PopulationMax);
+            while(newPop.Count() < PopulationMax)
             {
-                population.Add(createNetworkV1());
+                newPop.Add(CreateNetwork());
             }
         }
 
-        public struct runNextGenerationParams
+        /*
+         * Runs a specified number of generations. The reason it takes
+         * an Object parameter is so that it can be started in another
+         * thread... C#
+        */
+        public override void RunNGenerations(Object parameters)
         {
-            public ProgressBar progressBar;
-            public RichTextBox textBox;
-            public double mutationRate;
-            public double crossoverRate;
-            public double maxStepSize;
-            public int numGenerations;
-            public double pc;
-            public bool diversity;
-            public runNextGenerationParams(ProgressBar pb, RichTextBox tb, double mr, double cr, double mss, int numGens, double pc, bool dc)
+            RunParameters ops = (RunParameters)parameters;
+
+            for (int i = 0; i < ops.NumGenerations; i++)
             {
-                this.progressBar = pb;
-                this.textBox = tb;
-                this.mutationRate = mr;
-                this.crossoverRate = cr;
-                this.maxStepSize = mss;
-                this.numGenerations = numGens;
-                this.pc = pc;
-                this.diversity = dc;
+                TestCurrentPopulation(parameters);
             }
         }
 
-        public void runNGenerations(Object obj)
+        /* 
+         * Runs the current population of networks on newly
+         * instantiated game instaces and gets fitness ratings
+         * and other information to be used for selection into
+         * the next generation. This function also mutates the
+         * previous generation.
+        */
+        public override void TestCurrentPopulation(Object parameters)
         {
-            runNextGenerationParams p = (runNextGenerationParams)obj;
+            RunParameters ops = (RunParameters)parameters;
 
-            for (int i=0; i<p.numGenerations; i++)
+            // Mutate previous population into this generation.
+            // This is done at the start so that you can view the
+            // population statistics before deciding what parameters
+            // to use to mutate it.
+            NextGeneration(parameters);
+
+            // Instantiate a Snake game for each member of the population
+            List<SnakeGame> games = new List<SnakeGame>(population.Count());
+            foreach (var _ in population)
             {
-                runNextGeneration(obj);
-            }
-        }
-
-        public void runNextGeneration(Object obj)
-        {
-            runNextGenerationParams p = (runNextGenerationParams)obj;
-            long generationStartTime = DateTime.UtcNow.Second;
-
-            // mutate population based on previous results
-            if (generation != 1)
-            {
-                if (p.diversity)
-                {
-                    mutatePopulationWithDiversityMeasure(p);
-                }
-                else
-                {
-                    mutatePopulation(p);
-                }
-            }
-
-            // instantiate a game for each entity
-            List<Snake> games = new List<Snake>(population.Count());
-            for (int i=0; i<population.Count(); i++)
-            {
-                Snake newGame = new Snake(25);
+                SnakeGame newGame = new SnakeGame(25);
                 newGame.init();
                 games.Add(newGame);
             }
-            
-            int turnNumber = 1;
-            int numFinished = 0;
 
-            // Fix this shit TODO
+            // Run all games.
+            var turnNumber = 1;
+            var numFinished = 0;
             while (numFinished < population.Count)
             {
-                int previousNumFinished = numFinished;
-
-                for (int i = 0; i < population.Count(); i++)
+                for (var i = 0; i < population.Count(); i++)
                 {
-                    SharpNeuralNetwork network = population[i];
-                    Snake gameInstance = games[i];
-
-                    // interprete game board to network inputs
-                    SnakeGameState state = (SnakeGameState)gameInstance.getGameState();
-                    if (state.gameOver)
+                    NeuralNetwork network = population[i];
+                    SnakeGame gameInstance = games[i];
+                    
+                    // Skip if game is already over
+                    if (gameInstance.GameOver)
                     {
                         continue;
                     }
-                    Matrix<float> inputs = gameStateToInputs(state);
 
-                    // get move from network
-                    Matrix<float> output = network.feedForwardInput(inputs);
+                    // Interprete game state to inputs for the neural network
+                    Matrix<float> inputs = GameStateToNetworkInput(gameInstance);
 
-                    // interprete network output to game move
-                    //gameInstance.registerMove(networkOutputToMove(output));
-                    gameInstance.registerMove(networkOutputFacingToMove(output, state.snakeDirection));
+                    // Run inputs through network and retrieve output
+                    Matrix<float> output = network.FeedForwardInput(inputs);
+
+                    // Interprete network output to game move.
+                    // gameInstance.registerMove(networkOutputToMove(output));
+                    // gameInstance.registerMove(networkOutputFacingToMove(output, state.snakeDirection));
+                    gameInstance.registerMove(NetworkOutputToMove(output));
 
                     // go to next turn in game
-                    bool gameOver = gameInstance.finishTurn();
-
-                    // if game over store index for removal
+                    bool gameOver = gameInstance.FinishTurn();
                     if (gameOver)
                     {
                         numFinished++;
-                        int total = 0;
-                        total += 0; //gameInstance.getTurn() / 10;
-                        network.score = total + (gameInstance.score*10);
+                        network.Score = CalculateFitness(gameInstance);
                     }
                 }
 
-                String strToWrite = $"{population.Count-numFinished} left.\n";
-                strToWrite += $"Turn: {turnNumber}\n";
+                String strToWrite = $"{population.Count - numFinished} Left.\n" +
+                    $"Generation : {generationNumber}\n" +
+                    $"Turn: {turnNumber}\n";
 
-                p.textBox.BeginInvoke((MethodInvoker)delegate
+                ops.TextBox1.BeginInvoke((MethodInvoker)delegate
                 {
-                    p.textBox.Text = strToWrite;
+                    ops.TextBox1.Text = strToWrite;
                 });
                 turnNumber++;
             }
 
             // sort list so [0] is fittest
-            population = population.OrderBy(i => i.getScore()).ToList();
+            population = population.OrderBy(i => i.Score).ToList();
             population.Reverse();
 
             String str = $"Done.\n";
-            str += $"Generation: {generation}\n";
+            str += $"Generation: {generationNumber}\n";
             str += $"Turn: {turnNumber}\n";
-            str += $"Best NN score: {population[0].score}\n";
+            str += $"Best NN score: {population[0].Score}\n";
 
-            p.textBox.BeginInvoke((MethodInvoker)delegate
+            ops.TextBox2.BeginInvoke((MethodInvoker)delegate
             {
-                p.textBox.Text = str;
+                ops.TextBox2.Text = str;
             });
-
-            generation++;
         }
 
-        private void mutatePopulation(runNextGenerationParams p)
+        /*
+         * Mutates the current population based on the mutation paramaters
+         * sent down by the Simulation Engine. The paramaters object must be
+         * castable to a SimulationEngine.RunParameters object
+        */    
+        public override void NextGeneration(Object parameters)
         {
-            if (generation == 1) return;
-            List<DNA> pop = new List<DNA>(population.Count);
-            foreach (SharpNeuralNetwork n in population)
+            RunParameters ops = (RunParameters)parameters;
+            if (generationNumber == 1)
             {
-                pop.Add(n);
+                return;
+            }
+
+            List<DNA> currentPopAsDNAList = new List<DNA>(population.Count);
+            List<DNA> newPopulationAsDNAList = new List<DNA>(PopulationMax);
+            List<NeuralNetwork> newPopulation = new List<NeuralNetwork>(PopulationMax);
+            foreach (var network in population)
+            {
+                currentPopAsDNAList.Add(network);
+            }
+
+            if (ops.UseDiversity)
+            {
+                newPopulationAsDNAList = GeneticLearning.generateNewPopulationFromDiversityAndFitness(
+                    currentPopAsDNAList,
+                    ops.CrossoverRate,
+                    ops.MutationRate,
+                    ops.MaxStepSize,
+                    ops.ProbabilityC,
+                    PopulationMax,
+                    Rand);
+            }
+            else
+            {
+                newPopulationAsDNAList = GeneticLearning.generateNewPopulationFromPcSelection(
+                    currentPopAsDNAList,
+                    ops.CrossoverRate,
+                    ops.MutationRate,
+                    ops.MaxStepSize,
+                    ops.ProbabilityC,
+                    PopulationMax,
+                    Rand);
             }
             
-            List<DNA> newPopulation = GeneticLearning.generateNewPopulationFromPcSelection(pop,
-                p.crossoverRate, p.mutationRate, p.maxStepSize, p.pc, rand);
-
-            for (int i = 0; i < newPopulation.Count; i++)
+            for (int i = 0; i < newPopulationAsDNAList.Count; i++)
             {
-                population[i] = (SharpNeuralNetwork)newPopulation[i];
+                newPopulation.Add((NeuralNetwork)newPopulationAsDNAList[i]);
             }
+
+            population = newPopulation;
+            generationNumber++;
         }
 
-        private void mutatePopulationWithDiversityMeasure(runNextGenerationParams p)
+        /*
+         * Runs the given network on a new instance of the game
+         * and renders the gameplay as it goes. The paramaters object must be
+         * castable to a SimulationEngine.RunParameters object
+        */
+        public abstract void RunNetworkForGui(Object parameters)
         {
-            if (generation == 1) return;
-            List<DNA> pop = new List<DNA>(population.Count);
-            foreach (SharpNeuralNetwork n in population)
-            {
-                pop.Add(n);
-            }
-
-            List<DNA> newPopulation = GeneticLearning.generateNewPopulationFromDiversityAndFitness(pop,
-                p.crossoverRate, p.mutationRate, p.maxStepSize, p.pc, rand);
-
-            for (int i = 0; i < newPopulation.Count; i++)
-            {
-                population[i] = (SharpNeuralNetwork)newPopulation[i];
-            }
-        }
-
-        public struct runBestOnScreenParams
-        {
-            public int pixelsw, pixelsh, fps, index;
-            public PictureBox screen;
-            public runBestOnScreenParams(int w, int h, int f, int i, PictureBox p)
-            {
-                this.pixelsw = w;
-                this.pixelsh = h;
-                this.fps = f;
-                this.index = i;
-                this.screen = p;
-            }
-        }
-
-        public void runBestOnScreen(Object obj) 
-        {
-            runBestOnScreenParams p = (runBestOnScreenParams)obj;
-
-            if (p.index > population.Count()) p.index = 0;
-            SharpNeuralNetwork candidate = population[p.index];
-            Snake newGame = new Snake(p.pixelsw, p.pixelsh,ref p.screen, 25);
+            RunInGuiParameters ops = (RunInGuiParameters)parameters;
+            NeuralNetwork candidate = ops.Network;
+            SnakeGame newGame = new SnakeGame(ops.PixelsW, ops.PixelsH, ref p.screen, 25);
             newGame.init();
 
-            long millisPerFrame = 1000 / p.fps;
+            long millisPerFrame = 1000 / p.fps; // --------------------------------------------------------------------TODO---------------------------------------------------------------------------------------------
 
             bool gameOver = false;
             while (!gameOver)
@@ -237,10 +240,10 @@ namespace SharpGamer.Players
 
                 // get move from network
                 Matrix<float> output = candidate.feedForwardInput(inputs);
-                for (int i=0; i<3; i++)
+                for (int i = 0; i < 3; i++)
                 {
                     Console.Write($"{output.At(i, 0)},");
-                    
+
                 }
                 Console.WriteLine("");
 
@@ -266,6 +269,11 @@ namespace SharpGamer.Players
             }
 
             MessageBox.Show($"Score : {(((SnakeGameState)(newGame.getGameState())).score)}");
+        }
+
+        public void runBestOnScreen(Object obj) 
+        {
+
 
         }
 
