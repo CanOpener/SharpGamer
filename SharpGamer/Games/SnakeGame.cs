@@ -94,7 +94,7 @@ namespace SharpGamer.Games
             snakeBody.Add(sneakStartPoint);
             snakeDirection = Direction.Up;
             grid[sneakStartPoint.X][sneakStartPoint.Y] = Cell.Snake;
-            generateFood();
+            GenerateFood();
         }
 
         /*
@@ -148,7 +148,7 @@ namespace SharpGamer.Games
         */
         bool FinishTurn()
         {
-            Cell nextCell = nextCellInDirection(snakeDirection);
+            Cell nextCell = NextCellInDirection(snakeBody[0], snakeDirection, grid);
             if (nextCell == Cell.Snake || nextCell == Cell.Wall || turnNumber + 1 > maxTurns)
             {
                 // game over
@@ -156,11 +156,11 @@ namespace SharpGamer.Games
             }
             else if (nextCell == Cell.Food)
             {
-                moveSnakeInDirection(this.snakeDirection, true);
+                MoveSnakeInDirection(this.snakeDirection, true);
             }
             else
             {
-                moveSnakeInDirection(this.snakeDirection, false);
+                MoveSnakeInDirection(this.snakeDirection, false);
             }
 
             turnNumber++;
@@ -196,7 +196,7 @@ namespace SharpGamer.Games
                 keyPressQueue = new ConcurrentQueue<Direction>();
 
                 // Checks if events in next move (eat food, hit wall, hit snake etc..)
-                Cell nextCell = nextCellInDirection(this.snakeDirection);
+                Cell nextCell = NextCellInDirection(snakeBody[0], snakeDirection, grid);
                 if (nextCell == Cell.Wall || nextCell == Cell.Snake)
                 {
                     WriteGameStateToTextBox(ops.TextBox2);
@@ -204,11 +204,11 @@ namespace SharpGamer.Games
                 }
                 else if (nextCell == Cell.Food)
                 {
-                    moveSnakeInDirection(snakeDirection, true);
+                    MoveSnakeInDirection(snakeDirection, true);
                 }
                 else if (nextCell == Cell.Empty)
                 {
-                    moveSnakeInDirection(snakeDirection, false);
+                    MoveSnakeInDirection(snakeDirection, false);
                 }
 
                 // Draw on canvas
@@ -277,7 +277,7 @@ namespace SharpGamer.Games
         */
         public static GridPoint NextPointInDirection(GridPoint location, Direction dir)
         {
-            GridPoint currentPoint = location;
+            var currentPoint = location;
             switch (dir)
             {
                 case Direction.Up:
@@ -302,7 +302,7 @@ namespace SharpGamer.Games
         */
         public static Cell NextCellInDirection(GridPoint location, Direction dir, List<List<Cell>> grid)
         {
-            GridPoint currentPoint = location;
+            var currentPoint = location;
             
             // Wall
             if (currentPoint.X < 0 || currentPoint.X >= grid.Count() ||
@@ -317,45 +317,10 @@ namespace SharpGamer.Games
             }
         }
 
-        // --------------------------------------------------------------------------------------------------------------------------------TODO------------------------------------------------
-        private void moveSnakeInDirection(Direction d, bool grow)
-        {
-            Point nextPoint = nextPointInDirection(d);
-            for (int i=0; i<snake.Count; i++)
-            {
-                Point temp = snake[i];
-
-                snake[i] = nextPoint; // Im assuming this wont be passed as reference as i am using structs
-                cells[nextPoint.x][nextPoint.y] = Cell.Snake;
-
-                nextPoint = temp;
-            }
-            cells[nextPoint.x][nextPoint.y] = Cell.Empty;
-
-            if (grow)
-            {
-                cells[nextPoint.x][nextPoint.y] = Cell.Snake;
-                score++;
-                snake.Add(nextPoint);
-                generateFood();
-            }
-        }
-
-        private void generateFood()
-        {
-            Point randPoint;
-            Cell cellAtPoint;
-            do
-            {
-                randPoint.x = this.rand.Next(0, boardSideLength);
-                randPoint.y = this.rand.Next(0, boardSideLength);
-                cellAtPoint = cells[randPoint.x][randPoint.y];
-            } while (cellAtPoint != Cell.Empty);
-            cells[randPoint.x][randPoint.y] = Cell.Food;
-            numFood++;
-        }
-
-        public Direction opposite(Direction d)
+        /*
+         * Returns the direction opposite to the given direction
+        */
+        public static Direction Opposite(Direction d)
         {
             switch (d)
             {
@@ -372,6 +337,55 @@ namespace SharpGamer.Games
             }
         }
 
+        /*
+         * Moves the snake in the given direction. if
+         * grow is true it will also grow the snake by 1
+         * block and increment the score counter.
+        */
+        private void MoveSnakeInDirection(Direction d, bool grow)
+        {
+            var nextPoint = NextPointInDirection(snakeBody[0], d);
+            for (int i=0; i< snakeBody.Count; i++)
+            {
+                var temp = snakeBody[i];
+
+                // Im assuming this wont be passed as reference as i am using structs
+                snakeBody[i] = nextPoint; 
+                grid[nextPoint.X][nextPoint.Y] = Cell.Snake;
+
+                nextPoint = temp;
+            }
+            grid[nextPoint.X][nextPoint.Y] = Cell.Empty;
+
+            if (grow)
+            {
+                grid[nextPoint.X][nextPoint.Y] = Cell.Snake;
+                score++;
+                snakeBody.Add(nextPoint);
+                GenerateFood();
+            }
+        }
+
+        /*
+         * Generates a new random food object
+         * on the grid
+        */
+        private void GenerateFood()
+        {
+            GridPoint randPoint = new GridPoint();
+            Cell cellAtPoint;
+            do
+            {
+                randPoint.X = Rand.Next(0, gridSideLength);
+                randPoint.Y = Rand.Next(0, gridSideLength);
+                cellAtPoint = grid[randPoint.X][randPoint.Y];
+            } while (cellAtPoint != Cell.Empty);
+            grid[randPoint.X][randPoint.Y] = Cell.Food;
+        }
+
+        /*
+         * Writes current game state to the given text box
+        */
         private void WriteGameStateToTextBox(RichTextBox tb)
         {
             string str = $"Game Over: {gameOver}\nTurn Number: {turnNumber}\nScore: {score}";
