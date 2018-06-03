@@ -9,8 +9,8 @@ namespace SharpGamer.Games
 {
     interface UserPlayableGame
     {
-        void init();
-        void startGame();
-        void addKeyPress(KeyEventArgs e);
+        void Init();
+        void StartGame();
+        void AddKeyPress(KeyEventArgs e);
     }
 }

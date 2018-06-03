@@ -12,7 +12,7 @@ using MathNet.Numerics.LinearAlgebra;
 namespace SharpGamer.Players
 {
 
-    class SharpSnakePlayer : SharpPlayer
+    class SharpSnakePlayer
     {
         private int populationMax;
         private int generation = 1;

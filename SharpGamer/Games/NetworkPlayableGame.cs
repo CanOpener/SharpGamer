@@ -8,11 +8,14 @@ namespace SharpGamer.Games
 {
     interface NetworkPlayableGame
     {
-        void init();
-        int getTurn();
-        GameState getGameState();
-        bool registerMove(int moveEnum);
-        bool finishTurn();
-        void render();
+        string Id { get; }
+        int Score { get; }
+        int TurnNumber { get; }
+        bool GameOver { get; }
+
+        void Init();
+        bool RegisterMove(int moveEnum);
+        bool FinishTurn();
+        void Render();
     }
 }
