@@ -4,15 +4,14 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using SharpGamer.NeuralNetworkEngine;
+using SharpGamer.NeuralNetworkEngine.ActivationFunctions;
 using SharpGamer.SimulationEngine;
 using SharpGamer.Games;
-using SharpGamer.Games.SnakeGame;
 using System.Windows.Forms;
 using MathNet.Numerics.LinearAlgebra;
 
 namespace SharpGamer.Players
 {
-
     class SnakePlayer : Player
     {
         private int generationNumber = 1;
@@ -49,13 +48,14 @@ namespace SharpGamer.Players
          * Creates and Instantiates a new population based on the 
          * PopulationMax property
         */
-        public void init()
+        public override void Init()
         {
             List<NeuralNetwork> newPop = new List<NeuralNetwork>(PopulationMax);
             while(newPop.Count() < PopulationMax)
             {
                 newPop.Add(CreateNetwork());
             }
+            population = newPop;
         }
 
         /*
@@ -92,10 +92,10 @@ namespace SharpGamer.Players
 
             // Instantiate a Snake game for each member of the population
             List<SnakeGame> games = new List<SnakeGame>(population.Count());
-            foreach (var _ in population)
+            foreach (var i in population)
             {
-                SnakeGame newGame = new SnakeGame(25);
-                newGame.init();
+                SnakeGame newGame = new SnakeGame(Rand, 25);
+                newGame.Init();
                 games.Add(newGame);
             }
 
@@ -119,12 +119,12 @@ namespace SharpGamer.Players
                     Matrix<float> inputs = GameStateToNetworkInput(gameInstance);
 
                     // Run inputs through network and retrieve output
-                    Matrix<float> output = network.FeedForwardInput(inputs);
+                    Matrix<float> output = network.ProcessInput(inputs);
 
                     // Interprete network output to game move.
                     // gameInstance.registerMove(networkOutputToMove(output));
                     // gameInstance.registerMove(networkOutputFacingToMove(output, state.snakeDirection));
-                    gameInstance.registerMove(NetworkOutputToMove(output));
+                    gameInstance.RegisterMove(NetworkOutputToMove(output, gameInstance));
 
                     // go to next turn in game
                     bool gameOver = gameInstance.FinishTurn();
@@ -159,13 +159,22 @@ namespace SharpGamer.Players
             {
                 ops.TextBox2.Text = str;
             });
+            generationNumber++;
+        }
+
+        // The classic fitness function for the specific game
+        // realistically this is going to be a really dynamic
+        // function..
+        public override int CalculateFitness(NetworkPlayableGame game)
+        {
+            return game.Score;
         }
 
         /*
          * Mutates the current population based on the mutation paramaters
          * sent down by the Simulation Engine. The paramaters object must be
          * castable to a SimulationEngine.RunParameters object
-        */    
+        */
         public override void NextGeneration(Object parameters)
         {
             RunParameters ops = (RunParameters)parameters;
@@ -184,24 +193,22 @@ namespace SharpGamer.Players
 
             if (ops.UseDiversity)
             {
-                newPopulationAsDNAList = GeneticLearning.generateNewPopulationFromDiversityAndFitness(
+                newPopulationAsDNAList = GeneticLearning.GeneratePopulationFromFitnessAndDiversityPC(
                     currentPopAsDNAList,
                     ops.CrossoverRate,
                     ops.MutationRate,
                     ops.MaxStepSize,
                     ops.ProbabilityC,
-                    PopulationMax,
                     Rand);
             }
             else
             {
-                newPopulationAsDNAList = GeneticLearning.generateNewPopulationFromPcSelection(
+                newPopulationAsDNAList = GeneticLearning.GeneratePopulationFromFitnessPC(
                     currentPopAsDNAList,
                     ops.CrossoverRate,
                     ops.MutationRate,
                     ops.MaxStepSize,
                     ops.ProbabilityC,
-                    PopulationMax,
                     Rand);
             }
             
@@ -211,7 +218,6 @@ namespace SharpGamer.Players
             }
 
             population = newPopulation;
-            generationNumber++;
         }
 
         /*
@@ -219,44 +225,35 @@ namespace SharpGamer.Players
          * and renders the gameplay as it goes. The paramaters object must be
          * castable to a SimulationEngine.RunParameters object
         */
-        public abstract void RunNetworkForGui(Object parameters)
+        public override void RunNetworkForGui(Object parameters)
         {
             RunInGuiParameters ops = (RunInGuiParameters)parameters;
             NeuralNetwork candidate = ops.Network;
-            SnakeGame newGame = new SnakeGame(ops.PixelsW, ops.PixelsH, ref p.screen, 25);
-            newGame.init();
+            SnakeGame gameInstance = new SnakeGame(Rand, 25);
+            gameInstance.Init();
 
-            long millisPerFrame = 1000 / p.fps; // --------------------------------------------------------------------TODO---------------------------------------------------------------------------------------------
-
+            long millisPerFrame = 1000 / ops.FPS;
             bool gameOver = false;
             while (!gameOver)
             {
                 long frameStartTime = DateTime.UtcNow.Millisecond;
+                WriteGameStateToTextBox(ops.TextBox2, gameInstance);
 
-                // interprete game board to network inputs
-                SnakeGameState state = (SnakeGameState)newGame.getGameState();
+                // Interprete game state to inputs for the neural network
+                Matrix<float> inputs = GameStateToNetworkInput(gameInstance);
 
-                Matrix<float> inputs = gameStateToInputs(state);
-
-                // get move from network
-                Matrix<float> output = candidate.feedForwardInput(inputs);
-                for (int i = 0; i < 3; i++)
-                {
-                    Console.Write($"{output.At(i, 0)},");
-
-                }
-                Console.WriteLine("");
+                // Run inputs through network and retrieve output
+                Matrix<float> output = candidate.ProcessInput(inputs);
 
 
                 // interprete network output to game move
-                //newGame.registerMove(networkOutputToMove(output));
-                newGame.registerMove(networkOutputFacingToMove(output, state.snakeDirection));
+                gameInstance.RegisterMove(NetworkOutputToMove(output, gameInstance));
 
                 // render
-                newGame.render();
+                gameInstance.Render(ops);
 
                 // go to next turn in game
-                gameOver = newGame.finishTurn();
+                gameOver = gameInstance.FinishTurn();
 
                 // Wait until next Frame
                 long currentTime = DateTime.UtcNow.Millisecond;
@@ -268,26 +265,24 @@ namespace SharpGamer.Players
                 }
             }
 
-            MessageBox.Show($"Score : {(((SnakeGameState)(newGame.getGameState())).score)}");
+            WriteGameStateToTextBox(ops.TextBox2, gameInstance);
         }
 
-        public void runBestOnScreen(Object obj) 
+        /*
+         * Uses the activation of the output layer of a network to 
+         * select a move for the game.
+        */
+        public override int NetworkOutputToMove(Matrix<float> output, NetworkPlayableGame g)
         {
-
-
-        }
-
-        public int networkOutputToMove(Matrix<float> output)
-        {
-            Vector<float> ou = output.Column(0);
-            return ou.MaximumIndex();
-        }
-
-        public int networkOutputFacingToMove(Matrix<float> output, Direction facingDirection)
-        {
+            Direction facingDirection = ((SnakeGame)g).SnakeDirection;
             Vector<float> ou = output.Column(0);
 
-            switch(ou.MaximumIndex())
+            if (ou.Count() != 3)
+            {
+                throw new ArgumentException("Output dimension does not match method for extracting move from output");
+            }
+
+            switch (ou.MaximumIndex())
             {
                 case 0: // choosing to go straight
                     return (int)facingDirection;
@@ -300,21 +295,21 @@ namespace SharpGamer.Players
             return (int)facingDirection;
         }
 
-        public Matrix<float> gameStateToInputs(GameState gs)
+        public override Matrix<float> GameStateToNetworkInput(NetworkPlayableGame g)
         {
-            SnakeGameState g = (SnakeGameState)gs;
-            List<float> inputs = new List<float>(32);
-            
+            SnakeGame gameInstance = (SnakeGame)g;
+            List<float> inputs = new List<float>(24);
+            var grid = gameInstance.Grid;
+
             // loop through all 8 directions starting from head
-            for (int i=0; i<8; i++)
+            for (var i = 0; i < 8; i++)
             {
-                Point head = g.snakeHead;
+                var head = gameInstance.SnakeHead;
                 int xDelta = 0;
                 int yDelta = 0;
 
                 // Trying out new perspective input method
-                //deltasForDirection(i, out xDelta, out yDelta);
-                deltasForDirectionFacing(i, g.snakeDirection, out xDelta, out yDelta);
+                DeltasForDirectionFacing(i, gameInstance.SnakeDirection, out xDelta, out yDelta);
 
                 int numValuesFound = 0;
                 int numSpaces = 0;
@@ -322,30 +317,31 @@ namespace SharpGamer.Players
                 float[] values = { 0f, 0f, 0f };
                 while (numValuesFound < values.Count()) // one distance value for each type of cell in this direction
                 {
-                    head.x += xDelta;
-                    head.y += yDelta;
+                    head.X += xDelta;
+                    head.Y += yDelta;
                     Cell cellHere;
-                    
+
                     // Wall
-                    if (head.x < 0 || head.x >= g.gridSideLength ||
-                        head.y < 0 || head.y >= g.gridSideLength)
+                    if (head.X < 0 || head.X >= gameInstance.GridSideLength ||
+                        head.Y < 0 || head.Y >= gameInstance.GridSideLength)
                     {
                         cellHere = Cell.Wall;
                     }
                     else
                     {
-                        cellHere = g.grid[head.x][head.y];
+                        cellHere = grid[head.X][head.Y];
                         if (cellHere == Cell.Empty)
                         {
+                            numSpaces++;
                             continue;
                         }
                     }
 
                     int indexHere = (int)cellHere - 1;
 
-                    if (valuesFound[indexHere] == false) // This type of cell has not been found in this direction yet
+                    if (!valuesFound[indexHere]) // This type of cell has not been found in this direction yet
                     {
-                        values[indexHere] = 1f - ((float)numSpaces / (float)(g.gridSideLength - 1));
+                        values[indexHere] = 1f - ((float)numSpaces / (float)(gameInstance.GridSideLength - 1));
                         valuesFound[indexHere] = true;
                         if (cellHere == Cell.Wall)
                         {
@@ -362,7 +358,14 @@ namespace SharpGamer.Players
             return CreateMatrix.Dense<float>(inputs.Count(), 1, inputs.ToArray());
         }
 
-        private void deltasForDirection(int direction, out int xDelta, out int yDelta)
+        /*
+         * the int "direction" is between 0 and 7 and it indeicates which direction
+         * you need the deltas for. 0 is straing up, 1 is up-right 2 is right etc..
+         * the x and y Deltas are values that should be added to the grid indexes
+         * in order for the next grid cell to be the next cell in the given direction.
+         * Sorry, best explenation i could come up with.
+        */
+        private void DeltasForDirection(int direction, out int xDelta, out int yDelta)
         {
             switch (direction)
             {
@@ -405,21 +408,26 @@ namespace SharpGamer.Players
             }
         }
 
-        private void deltasForDirectionFacing(int direction, Direction facing, out int xDelta, out int yDelta)
+        /*
+         * This function adds another layer to the deltas function by
+         * giving you the deltas for traversing the grid but but with reference
+         * to the direction the snake is facing
+        */
+        private void DeltasForDirectionFacing(int direction, Direction facing, out int xDelta, out int yDelta)
         {
             switch(facing)
             {
                 case Direction.Up:
-                    deltasForDirection(direction, out xDelta, out yDelta);
+                    DeltasForDirection(direction, out xDelta, out yDelta);
                     break;
                 case Direction.Right:
-                    deltasForDirection(((direction + 2) % 8), out xDelta, out yDelta);
+                    DeltasForDirection(((direction + 2) % 8), out xDelta, out yDelta);
                     break;
                 case Direction.Down:
-                    deltasForDirection(((direction + 4) % 8), out xDelta, out yDelta);
+                    DeltasForDirection(((direction + 4) % 8), out xDelta, out yDelta);
                     break;
                 case Direction.Left:
-                    deltasForDirection(((direction + 6) % 8), out xDelta, out yDelta);
+                    DeltasForDirection(((direction + 6) % 8), out xDelta, out yDelta);
                     break;
                 default:
                     xDelta = 0;
@@ -428,12 +436,27 @@ namespace SharpGamer.Players
             }
         }
 
-        public SharpNeuralNetwork createNetworkV1()
+        /*
+         * Creates a new random network for the snake gam
+        */
+        public override NeuralNetwork CreateNetwork()
         {
-            SharpNeuralNetwork nn = new SharpNeuralNetwork(24);
-            nn.addLayer(12);
-            nn.addLayer(3);
-            return nn;
+            var network = new NeuralNetwork(24, Rand);
+            network.AddLayer(9, ActivationType.Relu);
+            network.AddLayer(3, ActivationType.Softmax);
+            return network;
+        }
+
+        /*
+         * Writes current game state to the given text box
+        */
+        private void WriteGameStateToTextBox(RichTextBox tb, SnakeGame gameInstance)
+        {
+            string str = $"Game Over: {gameInstance.GameOver}\nTurn Number: {gameInstance.TurnNumber}\nScore: {gameInstance.Score}";
+            tb.BeginInvoke((MethodInvoker)delegate
+            {
+                tb.Text = str;
+            });
         }
     }
 }

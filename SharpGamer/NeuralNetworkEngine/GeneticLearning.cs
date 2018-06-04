@@ -192,9 +192,9 @@ namespace SharpGamer.NeuralNetworkEngine
 
             // now that we know the max distance we can normalise diversity measure to fitness
             // score for even weighted dimensions
-            foreach (SharpNeuralNetwork network in newPop)
+            foreach (NeuralNetwork network in newPop)
             {
-                network.diversity = (network.diversity/maxDistance)*((float)highestScore + 0.01f);
+                network.Diversity = (network.Diversity/maxDistance)*((float)highestScore + 0.01f);
             }
 
             // sort list by distance from origin on both axis

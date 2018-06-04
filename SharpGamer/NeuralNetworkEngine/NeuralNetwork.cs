@@ -46,6 +46,23 @@ namespace SharpGamer.NeuralNetworkEngine
         }
 
         /*
+         * Default constructor. Used with intent to build the neural network
+         * with AddLayer()
+        */
+        public NeuralNetwork(int inputSize, Random r)
+        {
+            System.Diagnostics.Debug.Assert(inputSize > 0);
+
+            this.id = System.Guid.NewGuid().ToString();
+            this.inputLayerSize = inputSize;
+            this.Rand = r;
+
+            this.layerWeights = new List<Matrix<float>>();
+            this.layerBiases = new List<Matrix<float>>();
+            this.layerActivations = new List<Activation>();
+        }
+
+        /*
          * Public constructor for all in one line instantiation.
         */
         public NeuralNetwork(int inLayerSize, List<int> additionalLayerSizes, List<ActivationType> activations, Random r)
@@ -161,6 +178,54 @@ namespace SharpGamer.NeuralNetworkEngine
 
             layerActivations.Add(Activation.CreateActivation(activation));
             numNonInputLayers++;
+        }
+
+        /*
+         * This function takes the given input matrix and feeds
+         * it forward through all the layers of the network. The 
+         * result of the output layer is then returned as a Matrix
+         * of floats.
+        */
+        public Matrix<float> ProcessInput(Matrix<float> input)
+        {
+            if (input.RowCount * input.ColumnCount != inputLayerSize)
+            {
+                throw new ArgumentException("input size invalid");
+            }
+
+            Matrix<float> previousActivation = input;
+            for (var i = 0; i < NumNonInputLayers; i++)
+            {
+                previousActivation = FeedForwardLayer(previousActivation, i);
+            }
+
+            return previousActivation;
+        }
+
+        /*
+         * This function feeds the given input through the specified
+         * layer of the network and returns its activated output. 
+         * Throws an index out of bounds exception if the layer index
+         * is invalid. 0 is the index of the first hidden layer.
+        */
+        public Matrix<float> FeedForwardLayer(Matrix<float> input, int layerIndex)
+        {
+            if (layerIndex < 0 || layerIndex >= NumNonInputLayers)
+            {
+                throw new IndexOutOfRangeException($"layer Index out of range. Layer index: {layerIndex}, Num hidden layers: {NumNonInputLayers}");
+            }
+
+            Matrix<float> weights = layerWeights[layerIndex];
+            if (input.RowCount  != weights.ColumnCount)
+            {
+                throw new ArgumentException("input size invalid");
+            }
+
+            var multiplication = weights.Multiply(input);
+            var withBiases = multiplication.Add(layerBiases[layerIndex]);
+            
+            float[] activated = layerActivations[layerIndex].ActivateAll(withBiases.Column(0).ToArray());
+            return CreateMatrix.Dense<float>(activated.Length, 1, activated);
         }
 
         /*

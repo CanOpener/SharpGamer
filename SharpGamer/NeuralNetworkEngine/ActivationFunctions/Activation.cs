@@ -47,7 +47,7 @@ namespace SharpGamer.NeuralNetworkEngine.ActivationFunctions
                 case ActivationType.Relu:
                     return new ReluActivation();
                 case ActivationType.Softmax:
-                    return new ReluActivation();
+                    return new SoftmaxActivation();
                 default:
                     throw new ArgumentException("Un recognised Activation Type");
             }

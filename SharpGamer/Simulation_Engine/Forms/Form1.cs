@@ -1,5 +1,4 @@
 ﻿using SharpGamer.Games;
-using SharpGamer.Games.SnakeGame;
 using SharpGamer.Players;
 using System;
 using System.Collections.Generic;
@@ -20,13 +19,16 @@ namespace SharpGamer.SimulationEngine.Forms
         private Thread workerThread = null;
         private SnakeGame game;
         private SnakePlayer player;
+        private Random rand;
 
         public Form1()
         {
             InitializeComponent();
-            player = new SnakePlayer(100000);
-            player.init();
-            game = new SnakeGame(500, 500, ref pictureBox1);
+            rand = new Random();
+            player = new SnakePlayer(1000, rand);
+            player.Init();
+            game = new SnakeGame(rand, 25);
+            game.Init();
         }
 
         private void Form1_Load(object sender, EventArgs e)
@@ -36,10 +38,20 @@ namespace SharpGamer.SimulationEngine.Forms
 
         private void start_Click(object sender, EventArgs e)
         {
-            ParameterizedThreadStart start = new ParameterizedThreadStart(player.runNGenerations);
+            var runParams = new RunParameters(
+                progressBar1,
+                richTextBox1,
+                richTextBox2,
+                (double)mutationRatePicker.Value,
+                (double)crossOverRatePicker.Value,
+                (double)maxStepSizePicker.Value,
+                (int)numGenerationsPicker.Value,
+                (double)pcPicker.Value,
+                diversityCB.Checked);
+
+            ParameterizedThreadStart start = new ParameterizedThreadStart(player.RunNGenerations);
             workerThread = new Thread(start);
-            workerThread.Start(new Players.SnakePlayer.runNextGenerationParams(progressBar1, richTextBox1, (double)mutationRatePicker.Value,
-                (double)crossOverRatePicker.Value, (double)maxStepSizePicker.Value, (int)numGenerationsPicker.Value, (double)pcPicker.Value, diversityCB.Checked));
+            workerThread.Start(runParams);
             richTextBox2.Text = $"Mutation Rate: {(double)mutationRatePicker.Value}\n" +
                 $"Crossover Rate: {(double)crossOverRatePicker.Value}\n" +
                 $"Max Step Size: {(double)maxStepSizePicker.Value}\n" +
@@ -54,15 +66,24 @@ namespace SharpGamer.SimulationEngine.Forms
 
         private void pause_click(object sender, EventArgs e)
         {
-            ParameterizedThreadStart start = new ParameterizedThreadStart(player.runBestOnScreen);
+            var runGuiParams = new RunInGuiParameters(
+                pictureBox1,
+                richTextBox1,
+                richTextBox2,
+                500,
+                500,
+                17,
+                1000, // fix this param
+                player.Population[(int)networkPicker.Value]);
+            ParameterizedThreadStart start = new ParameterizedThreadStart(player.RunNetworkForGui);
             workerThread = new Thread(start);
-            workerThread.Start(new Players.SnakePlayer.runBestOnScreenParams(500, 500, 10, (int)networkPicker.Value, pictureBox1));
+            workerThread.Start(runGuiParams);
         }
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
             e.SuppressKeyPress = true;
-            game.addKeyPress(e);
+            game.AddKeyPress(e);
         }
     }
 }

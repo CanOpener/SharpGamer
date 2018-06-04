@@ -32,10 +32,11 @@ namespace SharpGamer.Games
         private string id;
         private bool gameOver = false;
         private Direction snakeDirection;
-        private int maxTurns = 750;
+        private int maxTurnsSinceLastGrow = 200;
         private int gridSideLength = 20;
         private int turnNumber = 1;
         private int score = 0;
+        private int turnsSinceLastGrow = 0;
 
         private ConcurrentQueue<Direction> keyPressQueue;
         private List<List<Cell>> grid;
@@ -46,11 +47,12 @@ namespace SharpGamer.Games
         public string Id { get => id; }
         public bool GameOver { get => gameOver; }
         public Direction SnakeDirection { get => snakeDirection; }
-        public int MaxTurns { get => maxTurns; }
+        public GridPoint SnakeHead { get => snakeBody[0]; }
+        public int MaxTurnsSinceLastGrow { get => maxTurnsSinceLastGrow; }
         public int GridSideLength { get => gridSideLength; }
         public int TurnNumber { get => turnNumber; }
         public int Score { get => score; }
-
+        
         // Returning a copy of the grid here for safety.
         public List<List<Cell>> Grid {
             get {
@@ -151,9 +153,10 @@ namespace SharpGamer.Games
         public bool FinishTurn()
         {
             Cell nextCell = NextCellInDirection(snakeBody[0], snakeDirection, grid);
-            if (nextCell == Cell.Snake || nextCell == Cell.Wall || turnNumber + 1 > maxTurns)
+            if (nextCell == Cell.Snake || nextCell == Cell.Wall || turnsSinceLastGrow + 1 > maxTurnsSinceLastGrow)
             {
                 // game over
+
                 gameOver = true;
             }
             else if (nextCell == Cell.Food)
@@ -166,6 +169,7 @@ namespace SharpGamer.Games
             }
 
             turnNumber++;
+            turnsSinceLastGrow++;
             return gameOver;
         }
 
@@ -180,7 +184,7 @@ namespace SharpGamer.Games
             RunInGuiParameters ops = (RunInGuiParameters)parameters;
             long milisPerFrame = 1000 / ops.FPS;
 
-            while (turnNumber <= maxTurns)
+            while (turnNumber <= maxTurnsSinceLastGrow)
             {
                 long frameStartTime = DateTime.UtcNow.Millisecond;
                 WriteGameStateToTextBox(ops.TextBox2);
@@ -198,20 +202,7 @@ namespace SharpGamer.Games
                 keyPressQueue = new ConcurrentQueue<Direction>();
 
                 // Checks if events in next move (eat food, hit wall, hit snake etc..)
-                Cell nextCell = NextCellInDirection(snakeBody[0], snakeDirection, grid);
-                if (nextCell == Cell.Wall || nextCell == Cell.Snake)
-                {
-                    WriteGameStateToTextBox(ops.TextBox2);
-                    return;
-                }
-                else if (nextCell == Cell.Food)
-                {
-                    MoveSnakeInDirection(snakeDirection, true);
-                }
-                else if (nextCell == Cell.Empty)
-                {
-                    MoveSnakeInDirection(snakeDirection, false);
-                }
+                FinishTurn();
 
                 // Draw on canvas
                 Render(ops);
@@ -224,9 +215,9 @@ namespace SharpGamer.Games
                     long sleepDuration = milisPerFrame - frameDuration;
                     System.Threading.Thread.Sleep((int)sleepDuration);
                 }
-                turnNumber++;
             }
-            return;
+
+            WriteGameStateToTextBox(ops.TextBox2);
         }
 
         /*
@@ -304,7 +295,7 @@ namespace SharpGamer.Games
         */
         public static Cell NextCellInDirection(GridPoint location, Direction dir, List<List<Cell>> grid)
         {
-            var currentPoint = location;
+            var currentPoint = NextPointInDirection(location, dir);
             
             // Wall
             if (currentPoint.X < 0 || currentPoint.X >= grid.Count() ||
@@ -362,6 +353,7 @@ namespace SharpGamer.Games
             if (grow)
             {
                 grid[nextPoint.X][nextPoint.Y] = Cell.Snake;
+                turnsSinceLastGrow = 0;
                 score++;
                 snakeBody.Add(nextPoint);
                 GenerateFood();

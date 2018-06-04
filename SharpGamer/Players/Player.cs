@@ -49,7 +49,7 @@ namespace SharpGamer.Players
         // Uses the output from the network to create a "move"
         // for the game. This "move" is submitted to the game and the
         // turn finishes.
-        public abstract int NetworkOutputToMove(Matrix<float> output);
+        public abstract int NetworkOutputToMove(Matrix<float> output, NetworkPlayableGame g);
 
         // Uses parameters from the game object to create a set of
         // inputs for the neural network.
