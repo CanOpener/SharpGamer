@@ -3,44 +3,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using MathNet.Numerics.LinearAlgebra;
 
 namespace SharpGamer.NeuralNetworkEngine
 {
     public static class GeneticLearning
     {
-        public static int aaa = 0;
 
-        public static  List<DNA> getMatingPoolUsingFitnessScore(List<DNA> population, Random rand = null)
+        /*
+         * Given a list of sorted by fitness ([0] is the fittest) neural networks
+         * This function will select one of these neural networks baced on the double "pc"
+         * given. Essentially the fittest element has a (pc) chance of being selected. If
+         * he is not selected the next element has a (pc) chance of being selected.
+         * If none are selected the last one is used
+        */
+        public static DNA SelectUsingPc(List<DNA> sortedPopulation, double pc, Random rand)
         {
-            if (rand == null) rand = new Random();
-            int fitnessSum = 0;
-            foreach (DNA d in population)
-            {
-                fitnessSum += d.getScore();
-            }
-            
-
-            List <DNA> matingPool = new List<DNA>();
-            foreach (DNA d in population)
-            {
-                double probability = (double)d.getScore() / (double)fitnessSum;
-                int numEntries = (int)(probability * 100000);
-                Console.WriteLine($"Probability of selection = {d.getScore()}/{fitnessSum} = {probability}, NumEntries = {numEntries}");
-                for (int i=0; i<numEntries; i++)
-                {
-                    matingPool.Add(d);
-                }
-            }
-
-            return matingPool;
-        }
-
-        public static DNA selectUsingPc(List<DNA> sortedPopulation, double pc, Random rand = null)
-        {
-            if (rand == null) rand = new Random();
-
-            for (int i = 0; i < sortedPopulation.Count(); i++)
+            for (var i = 0; i < sortedPopulation.Count(); i++)
             {
                 if (rand.NextDouble() < pc)
                 {
@@ -50,61 +28,19 @@ namespace SharpGamer.NeuralNetworkEngine
             return sortedPopulation[sortedPopulation.Count - 1];
         }
 
-        public static List<DNA> generateNewPopulationFromMatingPool(List<DNA> matingPool, int popSize,
-            double crossoverRate, double mutationRate, double maxStepSize, Random rand = null)
+        /*
+         * Given a population sorted by fitness ([0] is the fittest) neural networks
+         * This function will generate a new population based on "peace of C" selection.
+         * See above function for explenation of how this selection works
+        */ 
+        public static List<DNA> GeneratePopulationFromFitnessPC(List<DNA> population, double crossoverRate,
+            double mutationRate, double maxStepSize, double pc, Random rand)
         {
-            if (rand == null) rand = new Random();
-            List<DNA> population = new List<DNA>(popSize);
-
-            while (population.Count() < popSize)
-            {
-                // Pick 2 parents
-                DNA parentA = matingPool[rand.Next(0, matingPool.Count)];
-                DNA parentB = matingPool[rand.Next(0, matingPool.Count)];
-                DNA child;
-
-                // See if crossover Happens
-                if (rand.NextDouble() <= crossoverRate)
-                {
-                    // do crossover
-                    child = parentA.applyCrossOver(parentB);
-                    //Console.WriteLine("Crossover");
-                }
-                else
-                {
-                    // Clone one of the parents
-                    child = parentA.clone();
-                }
-
-                // mutation
-                int genomeSize = child.getGenomeSize();
-                for (int i = 0; i < genomeSize; i++)
-                {
-                    if (rand.NextDouble() < mutationRate)
-                    {
-                        double stepSize = rand.NextDouble() * maxStepSize;
-                        bool positiveLeap = (rand.Next(0, 2) == 1);
-                        child.mutateAt(i, stepSize, positiveLeap);
-                        //Console.WriteLine($"Mutation at {i} of {genomeSize} with stepsize of {stepSize}");
-                    }
-                }
-
-                population.Add(child);
-            }
-
-            return population;
-        }
-
-        public static List<DNA> generateNewPopulationFromPcSelection(List<DNA> population, double crossoverRate,
-            double mutationRate, double maxStepSize, double pc, Random rand = null)
-        {
-            if (rand == null) rand = new Random();
-
             List<DNA> newPopulation = new List<DNA>(population.Count);
             while (newPopulation.Count() < population.Count())
             {
                 // Pick 2 parents
-                DNA parentA = selectUsingPc(population, pc, rand);
+                DNA parentA = SelectUsingPc(population, pc, rand);
                 DNA child;
 
                 // See if crossover Happens
@@ -114,30 +50,22 @@ namespace SharpGamer.NeuralNetworkEngine
                     DNA parentB;
                     do
                     {
-                        parentB = selectUsingPc(population, pc, rand);
-                    } while (parentA.getid().Equals(parentB.getid()));
-                    
-                    child = parentA.applyCrossOver(parentB);
-                    //Console.WriteLine("Crossover");
+                        parentB = SelectUsingPc(population, pc, rand);
+                    } while (parentA.Id.Equals(parentB.Id));
+
+                    // selecting cutoff point for the crossover.
+                    // using complete random for now. Subject to change
+                    double cutOff = rand.NextDouble();
+                    child = parentA.ApplyCrossoverWith(parentB, cutOff);
                 }
                 else
                 {
                     // Clone one of the parents
-                    child = parentA.clone();
+                    child = parentA.Clone();
                 }
 
                 // mutation
-                int genomeSize = child.getGenomeSize();
-                for (int i = 0; i < genomeSize; i++)
-                {
-                    if (rand.NextDouble() < mutationRate)
-                    {
-                        double stepSize = rand.NextDouble() * maxStepSize;
-                        bool positiveLeap = (rand.Next(0, 2) == 1);
-                        child.mutateAt(i, stepSize, positiveLeap);
-                        //Console.WriteLine($"Mutation at {i} of {genomeSize} with stepsize of {stepSize}");
-                    }
-                }
+                ApplyMutations(ref child, mutationRate, maxStepSize, rand);
 
                 newPopulation.Add(child);
             }
@@ -145,27 +73,36 @@ namespace SharpGamer.NeuralNetworkEngine
             return newPopulation;
         }
 
-        public static List<DNA> generateNewPopulationFromDiversityAndFitness(List<DNA> population, double crossoverRate,
-    double mutationRate, double maxStepSize, double pc, Random rand = null)
+        /*
+         * Given a population sorted by fitness ([0] is the fittest) neural networks
+         * This function will generate a new population by sorting the population
+         * by fitness AND diversity upon every selection. This will make sure that the
+         * new population is as fit and diverse as possible.
+         * 
+         * This function is not generalised for using DNA but rather forces a conversion to
+         * NeuralNetwork. TODO I will need to find a solution for this soon.
+        */
+        public static List<DNA> GeneratePopulationFromFitnessAndDiversityPC(List<DNA> population, double crossoverRate,
+            double mutationRate, double maxStepSize, double pc, Random rand = null)
         {
-            int highestScore = population[0].getScore();
-            int genomeSize = population[0].getGenomeSize();
+            var highestScore = population[0].Score;
+            var genomeSize = population[0].GenomeSize;
             List<DNA> newPopulation = new List<DNA>(population.Count);
 
             float[] centroidDeltas = new float[genomeSize];
-            for (int i=0; i<genomeSize; i++)
+            for (var i=0; i<genomeSize; i++)
             {
                 centroidDeltas[i] = 0f;
             }
 
             while (newPopulation.Count() < population.Count())
             {
-                SharpNeuralNetwork parentA;
-                SharpNeuralNetwork child;
+                NeuralNetwork parentA;
+                DNA child;
 
                 if (newPopulation.Count == 0)
                 {
-                    parentA = (SharpNeuralNetwork)population[0];
+                    parentA = (NeuralNetwork)population[0];
                 }
                 else
                 {
@@ -174,14 +111,14 @@ namespace SharpGamer.NeuralNetworkEngine
                     {
                         centroid[i] = (centroid[i] / newPopulation.Count());
                     }
-                    population = sortPopulationByDiversityAndFitness(population, centroid, highestScore);
-                    parentA = (SharpNeuralNetwork) selectUsingPc(population, pc, rand);
+                    population = SortPopulationByDiversityAndFitness(population, centroid, highestScore);
+                    parentA = (NeuralNetwork) SelectUsingPc(population, pc, rand);
                 }
 
                 // parent A added here so that parent B would be ranked for diversity on parent a too
-                newPopulation.Add(parentA); 
-                float[] deltasToRemove = parentA.getDnaAsArray();
-                for (int i=0; i<centroidDeltas.Count(); i++)
+                newPopulation.Add(parentA);
+                float[] deltasToRemove = parentA.GetDNAStrand();
+                for (var i = 0; i < centroidDeltas.Count(); i++)
                 {
                     centroidDeltas[i] += deltasToRemove[i];
                 }
@@ -191,80 +128,66 @@ namespace SharpGamer.NeuralNetworkEngine
                 {
                     // do crossover
                     float[] centroid = (float[])centroidDeltas.Clone();
-                    for (int i = 0; i < centroid.Count(); i++)
+                    for (var i = 0; i < centroid.Count(); i++)
                     {
                         centroid[i] = (centroid[i] / newPopulation.Count());
                     }
-                    population = sortPopulationByDiversityAndFitness(population, centroid, highestScore);
-                    SharpNeuralNetwork parentB = (SharpNeuralNetwork)selectUsingPc(population, pc, rand);
+                    population = SortPopulationByDiversityAndFitness(population, centroid, highestScore);
+                    NeuralNetwork parentB = (NeuralNetwork)SelectUsingPc(population, pc, rand);
 
-                    child = (SharpNeuralNetwork)parentA.applyCrossOver(parentB);
-                    //Console.WriteLine("Crossover");
+                    child = parentA.ApplyCrossoverWith(parentB, rand.NextDouble());
                 }
                 else
                 {
                     // Clone one of the parents
-                    child = (SharpNeuralNetwork)parentA.clone();
+                    child = parentA.Clone();
                 }
-
-                // mutation
-                for (int i = 0; i < genomeSize; i++)
-                {
-                    if (rand.NextDouble() < mutationRate)
-                    {
-                        double stepSize = rand.NextDouble() * maxStepSize;
-                        bool positiveLeap = (rand.Next(0, 2) == 1);
-                        child.mutateAt(i, stepSize, positiveLeap);
-                        //Console.WriteLine($"Mutation at {i} of {genomeSize} with stepsize of {stepSize}");
-                    }
-                }
+                
+                // Applying mutations
+                ApplyMutations(ref child, mutationRate, maxStepSize, rand);
 
                 // Removing all traces of parentA
                 newPopulation.RemoveAt(newPopulation.Count() - 1);
-                for (int i = 0; i < centroidDeltas.Count(); i++)
+                for (var i = 0; i < genomeSize; i++)
                 {
                     centroidDeltas[i] -= deltasToRemove[i];
                 }
 
+                // Adding child deltas
+                float[] childDeltas = ((NeuralNetwork)child).GetDNAStrand();
+                for (var i = 0; i < genomeSize; i++)
+                {
+                    centroidDeltas[i] += childDeltas[i];
+                }
+
                 newPopulation.Add(child);
-
-                Console.WriteLine(aaa);
-                aaa++;
             }
-
-
-            aaa = 0;
+            
             return newPopulation;
         }
 
-        public static float getNDimensionalDistance(float[] a, float[] b)
-        {
-            float sum = 0;
-            for (int i=0; i<a.Length; i++)
-            {
-                sum += (float)Math.Pow(a[0] - b[0], 2);
-            }
-            return (float)Math.Sqrt(sum);
-        }
-
-        // This function is not generalised TODO
-        public static List<DNA> sortPopulationByDiversityAndFitness(List<DNA> population, float[] centroid, int highestScore)
+        /*
+         * This function sorts the given population by fitness AND diversity.
+         * i.e Math.Sqrt(Math.Pow(i.getScore(),2) + Math.Pow(i.getDiversity(),2))
+        */
+        public static List<DNA> SortPopulationByDiversityAndFitness(List<DNA> population, float[] centroid, int highestScore)
         {
             List<DNA> newPop = new List<DNA>(population);
 
             // get distances from each member of population
             // to the centroid. That will be their diversity measure
             float maxDistance = 0;
-            foreach (SharpNeuralNetwork network in newPop)
+            foreach (NeuralNetwork network in newPop)
             {
-                float[] dnaString = network.getDnaAsArray();
+                float[] dnaString = network.GetDNAStrand();
+
+                // Euclidean distance is cheapest of N dimensional distance functions.
                 float distance = MathNet.Numerics.Distance.Euclidean(centroid, dnaString);
-                //float distance = getNDimensionalDistance(centroid, dnaString);
                 if (distance > maxDistance)
                 {
                     maxDistance = distance;
                 }
-                network.diversity = distance;
+                network.Diversity = distance;
             }
 
             // now that we know the max distance we can normalise diversity measure to fitness
@@ -275,9 +198,33 @@ namespace SharpGamer.NeuralNetworkEngine
             }
 
             // sort list by distance from origin on both axis
-            newPop = newPop.OrderBy(i => Math.Sqrt(Math.Pow(i.getScore(),2) + Math.Pow(i.getDiversity(),2))).ToList();
+            newPop = newPop.OrderBy(i => Math.Sqrt(Math.Pow(i.Score,2) + Math.Pow(i.Diversity,2))).ToList();
             newPop.Reverse();
             return newPop;
+        }
+
+        /*
+         * Applies mutations to a subject DNA based on the parameters.
+         * mutationRate is the fraction of the genome that will be mutated.
+         * maxStepSize is the maxim fraction of the Gene at the edit index
+         * to be added or subtracted to the current value.
+        */
+        public static void ApplyMutations(ref DNA subject, double mutationRate, double maxStepSize, Random rand)
+        {
+            int numMutations = 0;
+            var genomeSize = subject.GenomeSize;
+            for (var i = 0; i < genomeSize; i++)
+            {
+                if (rand.NextDouble() < mutationRate)
+                {
+                    double stepSize = rand.NextDouble() * maxStepSize;
+                    bool positiveLeap = (rand.Next(0, 2) == 1);
+                    subject.MutateGeneAtIndex(i, stepSize, positiveLeap);
+                    numMutations++;
+                }
+            }
+
+            Console.WriteLine($"Num mutations: {numMutations}.");
         }
     }
 }

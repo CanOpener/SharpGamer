@@ -28,6 +28,7 @@ namespace SharpGamer.Games
 
     class SnakeGame : UserPlayableGame, NetworkPlayableGame
     {
+        // private varibales
         private string id;
         private bool gameOver = false;
         private Direction snakeDirection;
@@ -40,6 +41,7 @@ namespace SharpGamer.Games
         private List<List<Cell>> grid;
         private List<GridPoint> snakeBody;
         
+        // public properties
         public Random Rand { get; set; }
         public string Id { get => id; }
         public bool GameOver { get => gameOver; }
@@ -74,7 +76,7 @@ namespace SharpGamer.Games
         /*
          * Instantiates the recourses needed for the game
         */
-        public void init()
+        public void Init()
         {
             keyPressQueue = new ConcurrentQueue<Direction>();
             grid = new List<List<Cell>>(gridSideLength);
@@ -105,7 +107,7 @@ namespace SharpGamer.Games
         {
             Direction move = (Direction)moveEnum;
 
-            if (move != opposite(snakeDirection))
+            if (move != Opposite(snakeDirection))
             {
                 snakeDirection = move;
                 return true;
@@ -146,7 +148,7 @@ namespace SharpGamer.Games
          * causes a game over by hitting a wall or a body part
          * it will return true
         */
-        bool FinishTurn()
+        public bool FinishTurn()
         {
             Cell nextCell = NextCellInDirection(snakeBody[0], snakeDirection, grid);
             if (nextCell == Cell.Snake || nextCell == Cell.Wall || turnNumber + 1 > maxTurns)
