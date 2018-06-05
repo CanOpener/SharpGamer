@@ -1,4 +1,4 @@
-﻿namespace SharpGamer.Forms
+﻿namespace SharpGamer.SimulationEngine.Forms
 {
     partial class Form1
     {
