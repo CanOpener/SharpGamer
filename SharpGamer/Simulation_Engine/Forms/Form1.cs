@@ -72,7 +72,7 @@ namespace SharpGamer.SimulationEngine.Forms
                 richTextBox2,
                 500,
                 500,
-                17,
+                20,
                 1000, // fix this param
                 player.Population[(int)networkPicker.Value]);
             ParameterizedThreadStart start = new ParameterizedThreadStart(player.RunNetworkForGui);

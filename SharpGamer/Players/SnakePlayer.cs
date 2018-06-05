@@ -442,7 +442,7 @@ namespace SharpGamer.Players
         public override NeuralNetwork CreateNetwork()
         {
             var network = new NeuralNetwork(24, Rand);
-            network.AddLayer(9, ActivationType.Relu);
+            network.AddLayer(9, ActivationType.Sigmoid);
             network.AddLayer(3, ActivationType.Softmax);
             return network;
         }
