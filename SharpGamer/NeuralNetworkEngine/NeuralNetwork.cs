@@ -10,10 +10,9 @@ namespace SharpGamer.NeuralNetworkEngine
 {
     /*
      * This class holds a neural network with the ability
-     * to feedforward inputs and return outputs. Implements
-     * the DNA interface for use with Genetic algorithms.
+     * to feedforward inputs and return outputs.
     */
-    class NeuralNetwork : DNA
+    class NeuralNetwork
     {
         private string id;
         public string Id { get => id; }
@@ -30,7 +29,7 @@ namespace SharpGamer.NeuralNetworkEngine
         public List<Activation> LayerActivations { get => layerActivations; }
         public Random Rand { get; set; }
 
-        // These Properties are needed for the DNA interface
+        // Needed for Genetic Learning functions
         public float Diversity { get; set; }
         public int Score { get; set; }
         public int GenomeSize {
@@ -84,9 +83,10 @@ namespace SharpGamer.NeuralNetworkEngine
         }
 
         /*
-         * Public constructor will constrct the neural network from the "DNA strand" given to it.
-         * Based on the layer information it will copy the floats from the dna to their associated
-         * weight/bias positions. Used for DNA purposes
+         * Public constructor will constrct the neural network from the whole list
+         * of weights and additional values like activations etc.. The weights are
+         * extracted fromn the "values" parameter starting with the first layer and taking
+         * first weights for that layer then biases for the layer.
         */
         public NeuralNetwork(int inLayerSize, List<int> additionalLayerSizes, List<ActivationType> activations, float[] values, Random r)
         {
@@ -151,6 +151,14 @@ namespace SharpGamer.NeuralNetworkEngine
                 this.layerBiases.Add(biases);
                 this.layerActivations.Add(activation);
             }
+        }
+
+        /*
+         * Returns a new instance of this neural network.
+        */
+        public NeuralNetwork Clone()
+        {
+            return new NeuralNetwork(this);
         }
 
         /*
@@ -229,17 +237,7 @@ namespace SharpGamer.NeuralNetworkEngine
         }
 
         /*
-         * This function is needed for the DNA Interface.
-         * This is used in genetic algorithms
-        */
-        public DNA Clone()
-        {
-            return new NeuralNetwork(this);
-        }
-
-        /*
-         * This function is needed for the DNA Interface.
-         * It finds the weight/bias of the associated index
+         * This function finds the weight/bias of the associated index
          * and changes it. The change is the step * current value
          * in the (bool)positive/negative direction
         */
@@ -286,7 +284,7 @@ namespace SharpGamer.NeuralNetworkEngine
         /*
          * This function combines all the values of the weights and biases
          * of each layer and returns them as one big column major
-         * weight -> bias major array.
+         * weight -> bias array.
         */
         public float[] GetDNAStrand()
         {
@@ -305,10 +303,8 @@ namespace SharpGamer.NeuralNetworkEngine
          * The cut off point for the joining is given as a double
          * between 0 and 1.
         */
-        public DNA ApplyCrossoverWith(DNA b, double cutOffPoint)
+        public NeuralNetwork ApplyCrossoverWith(NeuralNetwork parentB, double cutOffPoint)
         {
-            NeuralNetwork parentB = (NeuralNetwork)b;
-
             int childInputLayerSize = inputLayerSize;
             List<int> childLayerSizes = new List<int>(numNonInputLayers);
             List<ActivationType> childLayerActivations = new List<ActivationType>(numNonInputLayers);

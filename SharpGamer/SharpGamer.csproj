@@ -63,7 +63,6 @@
     <Compile Include="NeuralNetworkEngine\ActivationFunctions\ReluActivation.cs" />
     <Compile Include="NeuralNetworkEngine\ActivationFunctions\SigmoidActivation.cs" />
     <Compile Include="NeuralNetworkEngine\ActivationFunctions\SoftmaxActivation.cs" />
-    <Compile Include="NeuralNetworkEngine\DNA.cs" />
     <Compile Include="NeuralNetworkEngine\GeneticLearning.cs" />
     <Compile Include="NeuralNetworkEngine\NeuralNetwork.cs" />
     <Compile Include="Players\Player.cs" />
