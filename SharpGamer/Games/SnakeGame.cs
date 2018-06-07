@@ -32,7 +32,7 @@ namespace SharpGamer.Games
         private string id;
         private bool gameOver = false;
         private Direction snakeDirection;
-        private int maxTurnsSinceLastGrow = 200;
+        private int maxTurnsSinceLastGrow = 300;
         private int gridSideLength = 20;
         private int turnNumber = 1;
         private int score = 0;

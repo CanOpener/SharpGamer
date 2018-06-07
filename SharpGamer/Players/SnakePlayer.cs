@@ -16,6 +16,7 @@ namespace SharpGamer.Players
     {
         private int generationNumber = 1;
         private List<NeuralNetwork> population;
+        private const int gridSideLength = 20;
 
         public override Random Rand { get; set; }
         public override int PopulationMax { get; set; }
@@ -94,7 +95,7 @@ namespace SharpGamer.Players
             List<SnakeGame> games = new List<SnakeGame>(population.Count());
             foreach (var i in population)
             {
-                SnakeGame newGame = new SnakeGame(Rand, 25);
+                SnakeGame newGame = new SnakeGame(Rand, gridSideLength);
                 newGame.Init();
                 games.Add(newGame);
             }
@@ -182,19 +183,13 @@ namespace SharpGamer.Players
             {
                 return;
             }
-
-            List<DNA> currentPopAsDNAList = new List<DNA>(population.Count);
-            List<DNA> newPopulationAsDNAList = new List<DNA>(PopulationMax);
-            List<NeuralNetwork> newPopulation = new List<NeuralNetwork>(PopulationMax);
-            foreach (var network in population)
-            {
-                currentPopAsDNAList.Add(network);
-            }
+            
+            var newPopulation = new List<NeuralNetwork>(PopulationMax);
 
             if (ops.UseDiversity)
             {
-                newPopulationAsDNAList = GeneticLearning.GeneratePopulationFromFitnessAndDiversityPC(
-                    currentPopAsDNAList,
+                newPopulation = GeneticLearning.GeneratePopulationFromFitnessAndDiversityPC(
+                    population,
                     ops.CrossoverRate,
                     ops.MutationRate,
                     ops.MaxStepSize,
@@ -203,18 +198,13 @@ namespace SharpGamer.Players
             }
             else
             {
-                newPopulationAsDNAList = GeneticLearning.GeneratePopulationFromFitnessPC(
-                    currentPopAsDNAList,
+                newPopulation = GeneticLearning.GeneratePopulationFromFitnessPC(
+                    population,
                     ops.CrossoverRate,
                     ops.MutationRate,
                     ops.MaxStepSize,
                     ops.ProbabilityC,
                     Rand);
-            }
-            
-            for (int i = 0; i < newPopulationAsDNAList.Count; i++)
-            {
-                newPopulation.Add((NeuralNetwork)newPopulationAsDNAList[i]);
             }
 
             population = newPopulation;
@@ -229,7 +219,7 @@ namespace SharpGamer.Players
         {
             RunInGuiParameters ops = (RunInGuiParameters)parameters;
             NeuralNetwork candidate = ops.Network;
-            SnakeGame gameInstance = new SnakeGame(Rand, 25);
+            SnakeGame gameInstance = new SnakeGame(Rand, gridSideLength);
             gameInstance.Init();
 
             long millisPerFrame = 1000 / ops.FPS;
@@ -313,8 +303,8 @@ namespace SharpGamer.Players
 
                 int numValuesFound = 0;
                 int numSpaces = 0;
-                bool[] valuesFound = { false, false, false };
-                float[] values = { 0f, 0f, 0f };
+                bool[] valuesFound = { false, false, false, false };
+                float[] values = { 0f, 0f, 0f, 0f };
                 while (numValuesFound < values.Count()) // one distance value for each type of cell in this direction
                 {
                     head.X += xDelta;
@@ -330,19 +320,12 @@ namespace SharpGamer.Players
                     else
                     {
                         cellHere = grid[head.X][head.Y];
-                        if (cellHere == Cell.Empty)
-                        {
-                            numSpaces++;
-                            continue;
-                        }
                     }
 
-                    int indexHere = (int)cellHere - 1;
-
-                    if (!valuesFound[indexHere]) // This type of cell has not been found in this direction yet
+                    if (!valuesFound[(int)cellHere]) // This type of cell has not been found in this direction yet
                     {
-                        values[indexHere] = 1f - ((float)numSpaces / (float)(gameInstance.GridSideLength - 1));
-                        valuesFound[indexHere] = true;
+                        values[(int)cellHere] = 1f - ((float)numSpaces / (float)(gameInstance.GridSideLength - 1));
+                        valuesFound[(int)cellHere] = true;
                         if (cellHere == Cell.Wall)
                         {
                             // after wall is found nothing else can be found in that direction
@@ -441,8 +424,9 @@ namespace SharpGamer.Players
         */
         public override NeuralNetwork CreateNetwork()
         {
-            var network = new NeuralNetwork(24, Rand);
-            network.AddLayer(9, ActivationType.Sigmoid);
+            var network = new NeuralNetwork(32, Rand);
+            //network.AddLayer(8, ActivationType.Sigmoid);
+            //network.AddLayer(5, ActivationType.Sigmoid);
             network.AddLayer(3, ActivationType.Softmax);
             return network;
         }

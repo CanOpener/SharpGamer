@@ -151,7 +151,7 @@
             this.mutationRatePicker.Size = new System.Drawing.Size(86, 20);
             this.mutationRatePicker.TabIndex = 10;
             this.mutationRatePicker.Value = new decimal(new int[] {
-            35,
+            30,
             0,
             0,
             131072});
@@ -192,7 +192,7 @@
             this.crossOverRatePicker.Size = new System.Drawing.Size(86, 20);
             this.crossOverRatePicker.TabIndex = 13;
             this.crossOverRatePicker.Value = new decimal(new int[] {
-            1,
+            7,
             0,
             0,
             65536});
@@ -275,10 +275,10 @@
             this.pcPicker.Size = new System.Drawing.Size(86, 20);
             this.pcPicker.TabIndex = 19;
             this.pcPicker.Value = new decimal(new int[] {
-            5,
+            99,
             0,
             0,
-            65536});
+            131072});
             // 
             // networkPicker
             // 
@@ -295,6 +295,8 @@
             // diversityCB
             // 
             this.diversityCB.AutoSize = true;
+            this.diversityCB.Checked = true;
+            this.diversityCB.CheckState = System.Windows.Forms.CheckState.Checked;
             this.diversityCB.Location = new System.Drawing.Point(259, 12);
             this.diversityCB.Name = "diversityCB";
             this.diversityCB.Size = new System.Drawing.Size(113, 17);

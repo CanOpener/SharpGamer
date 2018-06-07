@@ -27,7 +27,7 @@ namespace SharpGamer.SimulationEngine.Forms
             rand = new Random();
             player = new SnakePlayer(1000, rand);
             player.Init();
-            game = new SnakeGame(rand, 25);
+            game = new SnakeGame(rand, 20);
             game.Init();
         }
 
